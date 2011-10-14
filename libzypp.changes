@@ -1,3 +1,6 @@
+* Fri Oct 14 2011 Carsten Munk <carsten@maemo.org> - 9.10.2
+- libzypp was rebuilding needlessly, remove timestamping
+
 * Tue Sep 06 2011 Marko Saukko <marko.saukko@cybercom.com> - 9.10.2
 - Update to the latest upstream version 9.10.2
 

@@ -1,0 +1,22 @@
+diff -ru libzypp-9.10.2/zypp/ZConfig.cc libzypp-9.10.2-removetimestamp/zypp/ZConfig.cc
+--- libzypp-9.10.2/zypp/ZConfig.cc	2011-09-05 13:25:02.000000000 +0200
++++ libzypp-9.10.2-removetimestamp/zypp/ZConfig.cc	2011-10-14 16:24:34.621934039 +0200
+@@ -269,7 +269,7 @@
+         , apply_locks_file		( true )
+         , pluginsPath			( "/usr/lib/zypp/plugins" )
+       {
+-        MIL << "libzypp: " << VERSION << " built " << __DATE__ << " " <<  __TIME__ << endl;
++        MIL << "libzypp: " << VERSION << " built in OBS, see rpm -q --info libzypp for more information" << endl;
+         // override_r has higest prio
+         // ZYPP_CONF might override /etc/zypp/zypp.conf
+         if ( _parsedZyppConf.empty() )
+@@ -832,7 +832,7 @@
+ 
+   std::ostream & ZConfig::about( std::ostream & str ) const
+   {
+-    str << "libzypp: " << VERSION << " built " << __DATE__ << " " <<  __TIME__ << endl;
++    str << "libzypp: " << VERSION << " built in OBS, see rpm -q --info libzypp for more information" << endl;
+ 
+     str << "satsolver: " << sat_version;
+     if ( ::strcmp( sat_version, SATSOLVER_VERSION_STRING ) )
+Only in libzypp-9.10.2-removetimestamp/zypp: ZConfig.cc~

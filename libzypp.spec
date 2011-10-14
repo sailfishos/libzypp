@@ -33,6 +33,7 @@ Patch13:        MeeGo-patch-readd-thumb-arch-definitions.patch
 Patch14:        linker.patch
 Patch15:	0001-Disable-proxy-only-if-_none_-is-set-in-repo-file.patch 
 Patch16:        meego-try-again-while-downloading-fails.patch
+Patch17:	libzypp-9.10.2-removetimestamp.patch
 
 %description
 Package, Patch, Pattern, and Product Management
@@ -88,6 +89,7 @@ Authors:
 %patch14 -p1
 %patch15 -p1
 %patch16 -p1
+%patch17 -p1
 
 %build
 mkdir build
