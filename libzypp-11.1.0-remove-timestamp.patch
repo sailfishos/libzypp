@@ -1,0 +1,35 @@
+From 408df1d8162934cfc6e76cdd87a7a39901c2880a Mon Sep 17 00:00:00 2001
+From: Marko Saukko <marko.saukko@gmail.com>
+Date: Sun, 8 Apr 2012 13:57:10 +0300
+Subject: [PATCH] Drop date and time from builds so that we don't cause more
+ rebuilds.
+
+---
+ zypp/ZConfig.cc |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/zypp/ZConfig.cc b/zypp/ZConfig.cc
+index 2435931..e3efdb6 100644
+--- a/zypp/ZConfig.cc
++++ b/zypp/ZConfig.cc
+@@ -277,7 +277,7 @@ namespace zypp
+         , apply_locks_file		( true )
+         , pluginsPath			( "/usr/lib/zypp/plugins" )
+       {
+-        MIL << "libzypp: " << VERSION << " built " << __DATE__ << " " <<  __TIME__ << endl;
++        MIL << "libzypp: " << VERSION << " built in OBS, see rpm -q --info libzypp for more information" << endl;
+         // override_r has higest prio
+         // ZYPP_CONF might override /etc/zypp/zypp.conf
+         if ( _parsedZyppConf.empty() )
+@@ -851,7 +851,7 @@ namespace zypp
+ 
+   std::ostream & ZConfig::about( std::ostream & str ) const
+   {
+-    str << "libzypp: " << VERSION << " built " << __DATE__ << " " <<  __TIME__ << endl;
++    str << "libzypp: " << VERSION << " built in OBS, see rpm -q --info libzypp for more information" << endl;
+ 
+     str << "libsolv: " << solv_version;
+     if ( ::strcmp( solv_version, LIBSOLV_VERSION_STRING ) )
+-- 
+1.7.7.6
+

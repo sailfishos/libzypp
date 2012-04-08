@@ -4,36 +4,23 @@ License:        GPL v2 or later
 Group:          System/Packages
 AutoReqProv:    on
 Summary:        Package, Patch, Pattern, and Product Management
-Version:        9.10.2
+Version:        11.1.0
 Release:        1
 Source:         %{name}-%{version}.tar.bz2
 Source1:        %{name}-rpmlintrc
 Source2:        libzypp.conf
 BuildRequires:  cmake
 BuildRequires:  libudev-devel
-BuildRequires:  libsatsolver-devel >= 0.14.9
+BuildRequires:  libsolv-devel
 BuildRequires:  openssl-devel
 BuildRequires:  boost-devel curl-devel doxygen gcc-c++ gettext-devel libxml2-devel
 BuildRequires:  expat-devel
 BuildRequires:  dbus-glib-devel glib2-devel popt-devel rpm-devel
 BuildRequires:  pkgconfig(libproxy-1.0)
 Requires:       gnupg2
-Requires:       satsolver-tools
+Requires:       libsolv-tools
 
-Patch0: 	libzypp-6.29.2-meego.patch
-Patch1: 	libzypp-log-issue-bug704.patch
-Patch2:         libzypp-meego-release.patch
-Patch3:		use_gpg2.patch
-Patch5:         meego-check-products-dir-while-using-rpmdb2solv.patch
-Patch6:         MeeGo-resume-download.patch
-Patch10:        MeeGo-dont-use-multcurl-by-default.patch
-Patch11:        MeeGo-Add-Rpm-Checker.patch
-Patch12:        MeeGo-use-fullname-in-search_deltafile.patch
-Patch13:        MeeGo-patch-readd-thumb-arch-definitions.patch
-Patch14:        linker.patch
-Patch15:	0001-Disable-proxy-only-if-_none_-is-set-in-repo-file.patch 
-Patch16:        meego-try-again-while-downloading-fails.patch
-Patch17:	libzypp-9.10.2-removetimestamp.patch
+Patch0:         libzypp-11.1.0-remove-timestamp.patch
 
 %description
 Package, Patch, Pattern, and Product Management
@@ -54,11 +41,9 @@ License:        GPL v2 or later
 Requires:       libzypp == %{version}
 Requires:       libxml2-devel curl-devel openssl-devel rpm-devel glibc-devel zlib-devel
 Requires:       bzip2 popt-devel dbus-devel glib2-devel boost-devel libstdc++-devel
-Requires:       cmake libsatsolver-devel >= 0.13.0
+Requires:       cmake libsolv-devel
 Summary:        Package, Patch, Pattern, and Product Management - developers files
 Group:          System/Packages
-Provides:       yast2-packagemanager-devel
-Obsoletes:      yast2-packagemanager-devel
 
 %description -n libzypp-devel
 Package, Patch, Pattern, and Product Management - developers files
@@ -76,45 +61,24 @@ Authors:
 
 %prep
 %setup -q
-%patch0 -p1 -b .meego
-%patch1 -p1 -b .log-issue
-%patch2 -p1 -b .meego-release
-%patch3 -p1 
-%patch5 -p1
-%patch6 -p1
-%patch10 -p1
-%patch11 -p1
-%patch12 -p1
-%patch13 -p1
-%patch14 -p1
-%patch15 -p1
-%patch16 -p1
-%patch17 -p1
+%patch0 -p1
 
 %build
 mkdir build
 cd build
-export CFLAGS="$RPM_OPT_FLAGS"
-export CXXFLAGS="$CFLAGS"
-MOZ_OPT_FLAGS=$(echo $RPM_OPT_FLAGS | %{__sed} -e 's/-O2//' -e 's/-Wall//' -e 's/-Os//')
-export RPM_OPT_FLAGS=$MOZ_OPT_FLAGS
-
-MOZ_OPT_FLAGS=$(echo $CFLAGS| %{__sed} -e 's/-O2//' -e 's/-Wall//' -e 's/-Os//')
-export CFLAGS=$MOZ_OPT_FLAGS
-
-MOZ_OPT_FLAGS=$(echo $CXXFLAGS| %{__sed} -e 's/-O2//' -e 's/-Wall//' -e 's/-Os//')
-export CXXFLAGS=$MOZ_OPT_FLAGS
-cmake -DCMAKE_INSTALL_PREFIX=/usr \
+cmake -DCMAKE_INSTALL_PREFIX=%{_prefix} \
       -DDOC_INSTALL_DIR=%{_docdir} \
       -DLIB=%{_lib} \
       -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_SKIP_RPATH=1 \
+      -DUSE_TRANSLATION_SET=${TRANSLATION_SET:-zypp} \
       ..
-make %{?jobs:-j %jobs} VERBOSE=1
-make -C doc/autodoc %{?jobs:-j %jobs}
-make -C po %{?jobs:-j %jobs} translations
+make %{?_smp_mflags} VERBOSE=1
+make -C doc/autodoc %{?_smp_mflags}
+make -C po %{?_smp_mflags} translations
+
 %if 0%{?run_testsuite}
-  make -C tests %{?jobs:-j %jobs}
+  make -C tests %{?_smp_mflags}
   pushd tests
   LD_LIBRARY_PATH=$PWD/../zypp:$LD_LIBRARY_PATH ctest .
   popd
@@ -125,12 +89,13 @@ rm -rf "$RPM_BUILD_ROOT"
 cd build
 make install DESTDIR=$RPM_BUILD_ROOT
 make -C doc/autodoc install DESTDIR=$RPM_BUILD_ROOT
-mkdir -p $RPM_BUILD_ROOT/etc/zypp/repos.d
-mkdir -p $RPM_BUILD_ROOT/etc/zypp/services.d
-mkdir -p $RPM_BUILD_ROOT/%{_usr}/lib/zypp
-mkdir -p $RPM_BUILD_ROOT/%{_var}/lib/zypp
-mkdir -p $RPM_BUILD_ROOT/%{_var}/log/zypp
-mkdir -p $RPM_BUILD_ROOT/%{_var}/cache/zypp
+mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/zypp/repos.d
+mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/zypp/services.d
+mkdir -p $RPM_BUILD_ROOT%{_usr}/lib/zypp
+mkdir -p $RPM_BUILD_ROOT%{_var}/lib/zypp
+mkdir -p $RPM_BUILD_ROOT%{_var}/log/zypp
+mkdir -p $RPM_BUILD_ROOT%{_var}/cache/zypp
+
 make -C po install DESTDIR=$RPM_BUILD_ROOT
 # Create filelist with translations
 cd ..
@@ -138,17 +103,18 @@ cd ..
 install -d %{buildroot}/etc/prelink.conf.d/
 install -m 644 %{SOURCE2} %{buildroot}/etc/prelink.conf.d/
 
-
 %{find_lang} zypp
 
 %post
 /sbin/ldconfig
 if [ -f /var/cache/zypp/zypp.db ]; then rm /var/cache/zypp/zypp.db; fi
+
 # convert old lock file to new
 # TODO make this a separate file?
 # TODO run the sript only when updating form pre-11.0 libzypp versions
-LOCKSFILE=/etc/zypp/locks
-OLDLOCKSFILE=/etc/zypp/locks.old
+LOCKSFILE=%{_sysconfdir}/zypp/locks
+OLDLOCKSFILE=%{_sysconfdir}/zypp/locks.old
+
 is_old(){
   # if no such file, exit with false (1 in bash)
   test -f ${LOCKSFILE} || return 1
@@ -163,6 +129,7 @@ is_old(){
   rm -f ${TEMP_FILE}
   return ${RES}
 }
+
 append_new_lock(){
   case "$#" in
     1 )
@@ -187,10 +154,12 @@ version: $2 $3
   ;;
 esac
 }
+
 die() {
   echo $1
   exit 1
 }
+
 if is_old ${LOCKSFILE}
   then
   mv -f ${LOCKSFILE} ${OLDLOCKSFILE} || die "cannot backup old locks"
@@ -201,9 +170,6 @@ if is_old ${LOCKSFILE}
 fi
 
 %postun -p /sbin/ldconfig
-
-%clean
-rm -rf "$RPM_BUILD_ROOT"
 
 %files -f zypp.lang
 %defattr(-,root,root,-)
@@ -219,17 +185,15 @@ rm -rf "$RPM_BUILD_ROOT"
 %dir %{_var}/lib/zypp
 %dir %{_var}/log/zypp
 %dir %{_var}/cache/zypp
-/usr/share/zypp
-/usr/bin/*
+%{_datadir}/zypp
+%{_bindir}/*
 %{_libdir}/libzypp*so.*
 
 %files devel
 %defattr(-,root,root,-)
 %{_libdir}/libzypp.so
 %{_docdir}/%{name}
-%dir /usr/include/zypp
-/usr/include/zypp/*
-/usr/share/cmake/Modules/*
+%{_includedir}/zypp
+%{_datadir}/cmake/Modules/*
 %{_libdir}/pkgconfig/libzypp.pc
 %doc %_mandir/man5/locks.5.*
-

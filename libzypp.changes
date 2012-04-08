@@ -1,3 +1,9 @@
+* Wed Mar 28 2012 Marko Saukko <sage@merproject.org> 11.1.0
+- Update to 11.1.0, Part of MER#76
+- Change dependency from libsatsolver to libsolv.
+- Drop all patches, except timestamp removal,
+  for now and lets fix things that needs fixing when they appear 
+
 * Fri Oct 14 2011 Carsten Munk <carsten@maemo.org> - 9.10.2
 - libzypp was rebuilding needlessly, remove timestamping
 
