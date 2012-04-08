@@ -293,7 +293,7 @@ namespace zypp
         , apply_locks_file		( true )
         , pluginsPath			( "/usr/lib/zypp/plugins" )
       {
-        MIL << "libzypp: " << VERSION << " built " << __DATE__ << " " <<  __TIME__ << endl;
+        MIL << "libzypp: " << VERSION << " built in OBS, see rpm -q --info libzypp for more information" << endl;
         // override_r has higest prio
         // ZYPP_CONF might override /etc/zypp/zypp.conf
         if ( _parsedZyppConf.empty() )
@@ -901,7 +901,7 @@ namespace zypp
 
   std::ostream & ZConfig::about( std::ostream & str ) const
   {
-    str << "libzypp: " << VERSION << " built " << __DATE__ << " " <<  __TIME__ << endl;
+    str << "libzypp: " << VERSION << " built in OBS, see rpm -q --info libzypp for more information" << endl;
 
     str << "libsolv: " << solv_version;
     if ( ::strcmp( solv_version, LIBSOLV_VERSION_STRING ) )
