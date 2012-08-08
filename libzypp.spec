@@ -21,6 +21,7 @@ Requires:       gnupg2
 Requires:       libsolv-tools
 
 Patch0:         libzypp-11.1.0-remove-timestamp.patch
+Patch1:         use_gpg2.patch
 
 %description
 Package, Patch, Pattern, and Product Management
@@ -62,6 +63,7 @@ Authors:
 %prep
 %setup -q
 %patch0 -p1
+%patch1 -p1
 
 %build
 mkdir build
