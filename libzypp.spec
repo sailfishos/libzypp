@@ -1,24 +1,28 @@
-%define run_testsuite 0
 Name:           libzypp
 License:        GPL v2 or later
 Group:          System/Packages
-AutoReqProv:    on
 Summary:        Package, Patch, Pattern, and Product Management
-Version:        11.1.0
+Version:        12.2.0
 Release:        1
 Source:         %{name}-%{version}.tar.bz2
 Source1:        %{name}-rpmlintrc
-Source2:        libzypp.conf
 BuildRequires:  cmake
-BuildRequires:  libudev-devel
-BuildRequires:  libsolv-devel
 BuildRequires:  openssl-devel
-BuildRequires:  boost-devel curl-devel doxygen gcc-c++ gettext-devel libxml2-devel
-BuildRequires:  expat-devel
-BuildRequires:  dbus-glib-devel glib2-devel popt-devel rpm-devel
+BuildRequires:  libudev-devel
+BuildRequires:  boost-devel >= 1.49.0
+BuildRequires:  doxygen
+BuildRequires:  gcc-c++ >= 4.6
+BuildRequires:  gettext-devel
+BuildRequires:  libxml2-devel
 BuildRequires:  pkgconfig(libproxy-1.0)
+BuildRequires:  libsolv-devel >= 0.1.0
+Requires:       libsolv-tools >= 0.1.0
+BuildRequires:  expat-devel
+BuildRequires:  glib2-devel
+BuildRequires:  popt-devel
+BuildRequires:  rpm-devel
 Requires:       gnupg2
-Requires:       libsolv-tools
+BuildRequires:  curl-devel
 
 Patch0:         libzypp-11.1.0-remove-timestamp.patch
 Patch1:         use_gpg2.patch
@@ -39,10 +43,20 @@ Authors:
 
 %package devel
 License:        GPL v2 or later
-Requires:       libzypp == %{version}
-Requires:       libxml2-devel curl-devel openssl-devel rpm-devel glibc-devel zlib-devel
-Requires:       bzip2 popt-devel dbus-devel glib2-devel boost-devel libstdc++-devel
-Requires:       cmake libsolv-devel
+Requires:       libzypp = %{version}
+Requires:       libxml2-devel
+Requires:       openssl-devel
+Requires:       rpm-devel
+Requires:       glibc-devel
+Requires:       zlib-devel
+Requires:       bzip2
+Requires:       popt-devel
+Requires:       boost-devel >= 1.49.0
+Requires:       libstdc++-devel
+Requires:       libudev-devel
+Requires:       cmake
+Requires:       curl-devel
+Requires:       libsolv-devel
 Summary:        Package, Patch, Pattern, and Product Management - developers files
 Group:          System/Packages
 
@@ -68,6 +82,11 @@ Authors:
 %build
 mkdir build
 cd build
+
+# There is gcc bug that prevents using gdwarf-4 atm.
+export CFLAGS="$CFLAGS -gdwarf-2"
+export CXXFLAGS="$CXXFLAGS -gdwarf-2"
+
 cmake -DCMAKE_INSTALL_PREFIX=%{_prefix} \
       -DDOC_INSTALL_DIR=%{_docdir} \
       -DLIB=%{_lib} \
@@ -93,7 +112,14 @@ make install DESTDIR=$RPM_BUILD_ROOT
 make -C doc/autodoc install DESTDIR=$RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/zypp/repos.d
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/zypp/services.d
-mkdir -p $RPM_BUILD_ROOT%{_usr}/lib/zypp
+mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/zypp/vendors.d
+mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/zypp/multiversion.d
+mkdir -p $RPM_BUILD_ROOT%{_prefix}/lib/zypp
+mkdir -p $RPM_BUILD_ROOT%{_prefix}/lib/zypp/plugins
+mkdir -p $RPM_BUILD_ROOT%{_prefix}/lib/zypp/plugins/commit
+mkdir -p $RPM_BUILD_ROOT%{_prefix}/lib/zypp/plugins/services
+mkdir -p $RPM_BUILD_ROOT%{_prefix}/lib/zypp/plugins/system
+mkdir -p $RPM_BUILD_ROOT%{_prefix}/lib/zypp/plugins/urlresolver
 mkdir -p $RPM_BUILD_ROOT%{_var}/lib/zypp
 mkdir -p $RPM_BUILD_ROOT%{_var}/log/zypp
 mkdir -p $RPM_BUILD_ROOT%{_var}/cache/zypp
@@ -101,10 +127,6 @@ mkdir -p $RPM_BUILD_ROOT%{_var}/cache/zypp
 make -C po install DESTDIR=$RPM_BUILD_ROOT
 # Create filelist with translations
 cd ..
-
-install -d %{buildroot}/etc/prelink.conf.d/
-install -m 644 %{SOURCE2} %{buildroot}/etc/prelink.conf.d/
-
 %{find_lang} zypp
 
 %post
@@ -174,19 +196,19 @@ fi
 %postun -p /sbin/ldconfig
 
 %files -f zypp.lang
-%defattr(-,root,root,-)
-%dir /etc/zypp
-%dir /etc/zypp/repos.d
-%dir /etc/zypp/services.d
-%config(noreplace) /etc/zypp/zypp.conf
-%config(noreplace) /etc/zypp/systemCheck
+%defattr(-,root,root)
+%dir               %{_sysconfdir}/zypp
+%dir               %{_sysconfdir}/zypp/repos.d
+%dir               %{_sysconfdir}/zypp/services.d
+%dir               %{_sysconfdir}/zypp/vendors.d
+%dir               %{_sysconfdir}/zypp/multiversion.d
+%config(noreplace) %{_sysconfdir}/zypp/zypp.conf
+%config(noreplace) %{_sysconfdir}/zypp/systemCheck
 %config(noreplace) %{_sysconfdir}/logrotate.d/zypp-history.lr
-%config(noreplace) /etc/prelink.conf.d/*
-%dir %{_libdir}/zypp
+%dir               %{_var}/lib/zypp
+%dir               %{_var}/log/zypp
+%dir               %{_var}/cache/zypp
 %{_libdir}/zypp
-%dir %{_var}/lib/zypp
-%dir %{_var}/log/zypp
-%dir %{_var}/cache/zypp
 %{_datadir}/zypp
 %{_bindir}/*
 %{_libdir}/libzypp*so.*
