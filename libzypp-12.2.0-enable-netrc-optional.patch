@@ -1,0 +1,17 @@
+diff -Naur libzypp-12.2.0/zypp/media/MediaCurl.cc libzypp-12.2.0-mod/zypp/media/MediaCurl.cc
+--- libzypp-12.2.0/zypp/media/MediaCurl.cc	2012-09-12 12:15:22.000000000 +0300
++++ libzypp-12.2.0-mod/zypp/media/MediaCurl.cc	2012-12-08 23:21:12.811055613 +0200
+@@ -1708,6 +1708,13 @@
+ 
+     return true;
+   }
++  else
++  {
++    // last ditch attempt to use ~/.netrc
++    CURLcode ret = curl_easy_setopt(_curl, CURLOPT_NETRC, CURL_NETRC_OPTIONAL);
++    if ( ret != 0 ) ZYPP_THROW(MediaCurlSetOptException(_url, _curlError));
++    return true;
++  }
+ 
+   return false;
+ }
