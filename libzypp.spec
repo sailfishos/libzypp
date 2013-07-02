@@ -27,6 +27,7 @@ BuildRequires:  curl-devel
 Patch0:         libzypp-11.1.0-remove-timestamp.patch
 Patch1:         use_gpg2.patch
 Patch2:         libzypp-12.2.0-enable-netrc-optional.patch
+Patch3:         tnhl-workaround.patch
 
 %description
 Package, Patch, Pattern, and Product Management
@@ -80,6 +81,7 @@ Authors:
 %patch0 -p1
 %patch1 -p1
 %patch2 -p1
+%patch3 -p1
 
 %build
 mkdir build

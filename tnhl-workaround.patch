@@ -1,0 +1,17 @@
+diff -Naur libzypp-12.2.0-orig/zypp/ZConfig.cc libzypp-12.2.0/zypp/ZConfig.cc
+--- libzypp-12.2.0-orig/zypp/ZConfig.cc	2012-09-12 12:15:22.000000000 +0300
++++ libzypp-12.2.0/zypp/ZConfig.cc	2013-07-02 01:45:04.083168930 +0300
+@@ -140,6 +140,13 @@
+ 	      WAR << "/etc/rpm/platform contains armv7hl-: architecture upgraded to '" << architecture << "'" << endl;
+ 	      break;
+ 	    }
++	    if ( str::hasPrefix( *in, "armv7tnhl-" ) )
++	    {
++	      architecture = Arch_armv7tnhl;
++	      WAR << "/etc/rpm/platform contains armv7tnhl-: architecture upgraded to '" << architecture << "'" << endl;
++	      break;
++	    }
++
+ 	  }
+ 	}
+       }
