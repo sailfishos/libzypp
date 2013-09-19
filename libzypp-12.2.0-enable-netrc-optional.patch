@@ -1,17 +1,141 @@
-diff -Naur libzypp-12.2.0/zypp/media/MediaCurl.cc libzypp-12.2.0-mod/zypp/media/MediaCurl.cc
---- libzypp-12.2.0/zypp/media/MediaCurl.cc	2012-09-12 12:15:22.000000000 +0300
-+++ libzypp-12.2.0-mod/zypp/media/MediaCurl.cc	2012-12-08 23:21:12.811055613 +0200
-@@ -1708,6 +1708,13 @@
+diff -Naur a/zypp/media/MediaCurl.cc b/zypp/media/MediaCurl.cc
+--- a/zypp/media/MediaCurl.cc	2012-09-12 09:15:22.000000000 +0000
++++ b/zypp/media/MediaCurl.cc	2013-09-20 18:12:26.002861997 +0000
+@@ -847,8 +847,8 @@
  
-     return true;
+   Url fileurl(getFileUrl(filename));
+ 
+-  bool retry = false;
+-
++  bool retry = false, netrc = false;
++  int numTry = 0;
+   do
+   {
+     try
+@@ -859,7 +859,7 @@
+     // retry with proper authentication data
+     catch (MediaUnauthorizedException & ex_r)
+     {
+-      if(authenticate(ex_r.hint(), !retry))
++      if (authenticate(ex_r.hint(), numTry++, netrc))
+         retry = true;
+       else
+       {
+@@ -884,8 +884,8 @@
+ 
+ bool MediaCurl::getDoesFileExist( const Pathname & filename ) const
+ {
+-  bool retry = false;
+-
++  bool retry = false, netrc = false;
++  int numTry = 0;
+   do
+   {
+     try
+@@ -895,7 +895,7 @@
+     // authentication problem, retry with proper authentication data
+     catch (MediaUnauthorizedException & ex_r)
+     {
+-      if(authenticate(ex_r.hint(), !retry))
++      if (authenticate(ex_r.hint(), numTry++, netrc))
+         retry = true;
+       else
+         ZYPP_RETHROW(ex_r);
+@@ -1607,9 +1607,32 @@
+ }
+ 
+ ///////////////////////////////////////////////////////////////////
+-
+-bool MediaCurl::authenticate(const string & availAuthTypes, bool firstTry) const
++/*
++ * The authentication is a challenge-response type transaction. We
++ * come here after the challenge has been received and need to send a
++ * response. There are plenty of ways to send the right and the wrong
++ * response. All of these preconditions need to be considered:
++ *
++ * 1) there are no existing credentials
++ * 2) credential manager has right/wrong credentials
++ * 3) user enters right/wrong credentials interactively
++ * 4) .netrc contains right/wrong credentials
++ * 5) client (e.g. zypper) can be in interactive or non-interactive mode
++ *
++ * First we always want to try to send a response with any stored
++ * credentials. If there are none, then we'll try using a .netrc. Only
++ * after these methods have failed to authenticate the user, we'll
++ * prompt the user for the credentials or give up if in
++ * non-interactive mode.
++ *
++ * The challenge-response loop needs to be able to end in the
++ * non-interactive mode in case none of the available methods provide
++ * the correct response.
++ *
++ */
++bool MediaCurl::authenticate(const string & availAuthTypes, int numTry, bool &netrcUsed) const
+ {
++  DBG << "numtry: " << numTry << endl;
+   //! \todo need a way to pass different CredManagerOptions here
+   Target_Ptr target = zypp::getZYpp()->getTarget();
+   CredentialManager cm(CredManagerOptions(target ? target->root() : ""));
+@@ -1618,21 +1641,29 @@
+   // get stored credentials
+   AuthData_Ptr cmcred = cm.getCred(_url);
+ 
+-  if (cmcred && firstTry)
++  // first try with any stored credentials
++  if (cmcred && (numTry == 0))
+   {
+     credentials.reset(new CurlAuthData(*cmcred));
+     DBG << "got stored credentials:" << endl << *credentials << endl;
    }
-+  else
-+  {
-+    // last ditch attempt to use ~/.netrc
+-  // if not found, ask user
+-  else
+-  {
++  // no stored creds or they failed, try .netrc instead if not already tried
++  else if ((numTry == 0 || numTry == 1) && (!netrcUsed)) {
++    DBG << "try with .netrc" << endl;
 +    CURLcode ret = curl_easy_setopt(_curl, CURLOPT_NETRC, CURL_NETRC_OPTIONAL);
 +    if ( ret != 0 ) ZYPP_THROW(MediaCurlSetOptException(_url, _curlError));
++    netrcUsed = true;
 +    return true;
 +  }
++  // stored creds and .netrc failed, ask user
++  else {
  
+     CurlAuthData_Ptr curlcred;
+     curlcred.reset(new CurlAuthData());
+     callback::SendReport<AuthenticationReport> auth_report;
+ 
+     // preset the username if present in current url
+-    if (!_url.getUsername().empty() && firstTry)
++    if (!_url.getUsername().empty() && (numTry == 0))
+       curlcred->setUsername(_url.getUsername());
+     // if CM has found some credentials, preset the username from there
+     else if (cmcred)
+@@ -1671,6 +1702,7 @@
+     }
+     else
+     {
++      // can be the result of the non-interactive client mode
+       DBG << "callback answer: cancel" << endl;
+     }
+   }
+@@ -1709,6 +1741,7 @@
+     return true;
+   }
+ 
++  // ends the authentication challenge-response loop
    return false;
  }
+ 
+diff -Naur a/zypp/media/MediaCurl.h b/zypp/media/MediaCurl.h
+--- a/zypp/media/MediaCurl.h	2012-09-12 09:15:22.000000000 +0000
++++ b/zypp/media/MediaCurl.h	2013-09-20 18:14:03.454858670 +0000
+@@ -156,7 +156,7 @@
+      */
+     std::string getAuthHint() const;
+ 
+-    bool authenticate(const std::string & availAuthTypes, bool firstTry) const;
++    bool authenticate(const std::string & availAuthTypes, int numTry, bool& netrcUsed) const;
+ 
+     bool detectDirIndex() const;
+ 
