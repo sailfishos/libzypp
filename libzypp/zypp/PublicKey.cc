@@ -157,7 +157,7 @@ namespace zypp
         static filesystem::TmpDir dir;
         const char* argv[] =
         {
-          "gpg",
+          "gpg2",
           "-v",
           "--no-default-keyring",
           "--fixed-list-mode",
