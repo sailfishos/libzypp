@@ -1,0 +1,14 @@
+diff -Naur a/zypp/media/MediaCurl.cc b/zypp/media/MediaCurl.cc
+--- a/zypp/media/MediaCurl.cc	2012-09-12 12:15:22.000000000 +0300
++++ b/zypp/media/MediaCurl.cc	2013-11-06 01:16:40.147685130 +0200
+@@ -591,6 +591,10 @@
+   // follow any Location: header that the server sends as part of
+   // an HTTP header (#113275)
+   SET_OPTION(CURLOPT_FOLLOWLOCATION, 1L);
++  // send user credentials to all hosts the site may redirect to.
++  // see "man curl" and acknowledge the potential security breach when
++  // using --location-trusted
++  SET_OPTION(CURLOPT_UNRESTRICTED_AUTH, 1L);
+   // 3 redirects seem to be too few in some cases (bnc #465532)
+   SET_OPTION(CURLOPT_MAXREDIRS, 6L);
+ 

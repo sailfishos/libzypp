@@ -1,3 +1,6 @@
+* Wed Nov 06 2013 Juha Kallioinen <juha.kallioinen@jolla.com> - 12.2.0
+- set unrestricted auth curl option
+
 * Fri Sep 20 2013 Juha Kallioinen <juha.kallioinen@jollamobile.com> - 12.2.0
 - rework netrc patch to also work in non-interactive client (zypper) mode
 
