@@ -140,6 +140,13 @@ namespace zypp
 	      WAR << "/etc/rpm/platform contains armv7hl-: architecture upgraded to '" << architecture << "'" << endl;
 	      break;
 	    }
+	    if ( str::hasPrefix( *in, "armv7tnhl-" ) )
+	    {
+	      architecture = Arch_armv7tnhl;
+	      WAR << "/etc/rpm/platform contains armv7tnhl-: architecture upgraded to '" << architecture << "'" << endl;
+	      break;
+	    }
+
 	  }
 	}
       }
