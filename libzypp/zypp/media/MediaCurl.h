@@ -156,7 +156,7 @@ class MediaCurl : public MediaHandler
      */
     std::string getAuthHint() const;
 
-    bool authenticate(const std::string & availAuthTypes, bool firstTry) const;
+    bool authenticate(const std::string & availAuthTypes, int numTry, bool& netrcUsed) const;
 
     bool detectDirIndex() const;
 
