@@ -75,7 +75,7 @@ Authors:
 %setup -q -n %{name}-%{version}/%{name}
 
 %build
-mkdir build
+mkdir -p build
 cd build
 
 # There is gcc bug that prevents using gdwarf-4 atm.
