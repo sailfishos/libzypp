@@ -131,9 +131,16 @@ namespace zypp
     filesystem::dirForEach(_dir,
                            [this](const Pathname & dir_r, const char *const & name_r)->bool
                            {
+                             const std::string wanted = ".check";
                              Pathname pth = dir_r/name_r;
-                             MIL << "Reading " << pth << endl;
-                             return loadFile(pth, false /* do not reset caps */);
+                             if (pth.extension() != wanted) {
+                               MIL << "Skipping " << pth << " (not a *.check file)" << endl;
+                               return true;
+                             }
+                             else {
+                               MIL << "Reading " << pth << endl;
+                               return loadFile(pth, false /* do not reset caps */);
+                             }
                            });
     return true;
   }
