@@ -18,10 +18,11 @@
 #include <fstream>
 #include <iomanip>
 
-#include "zypp/base/Logger.h"
+#include "zypp/base/LogTools.h"
 #include "zypp/base/String.h"
 #include "zypp/base/IOStream.h"
 #include "zypp/base/StrMatcher.h"
+#include "zypp/base/Errno.h"
 
 #include "zypp/AutoDispose.h"
 #include "zypp/ExternalProgram.h"
@@ -225,9 +226,9 @@ namespace zypp
     {
       if ( !isExist() )
         return 0;
-      if ( owner() == getuid() ) {
+      if ( owner() == geteuid() ) {
         return( uperm()/0100 );
-      } else if ( group() == getgid() ) {
+      } else if ( group() == getegid() ) {
         return( gperm()/010 );
       }
       return operm();
@@ -235,23 +236,28 @@ namespace zypp
 
     /******************************************************************
      **
-     **	FUNCTION NAME : PathInfo::major
+     **	FUNCTION NAME : PathInfo::devMajor
      **	FUNCTION TYPE : unsigned int
      */
-    unsigned int PathInfo::major() const
+    unsigned int PathInfo::devMajor() const
     {
       return isBlk() || isChr() ? ::major(statbuf_C.st_rdev) : 0;
     }
 
     /******************************************************************
      **
-     **	FUNCTION NAME : PathInfo::minor
+     **	FUNCTION NAME : PathInfo::devMinor
      **	FUNCTION TYPE : unsigned int
      */
-    unsigned int PathInfo::minor() const
+    unsigned int PathInfo::devMinor() const
     {
       return isBlk() || isChr() ? ::minor(statbuf_C.st_rdev) : 0;
     }
+
+    unsigned int PathInfo::major() const
+    { INT << "Cleanup the code: This method is deprecated" << endl; return devMajor(); }
+    unsigned int PathInfo::minor() const
+    { INT << "Cleanup the code: This method is deprecated" << endl; return devMinor(); }
 
     /******************************************************************
      **
@@ -264,17 +270,15 @@ namespace zypp
 
       str << obj.asString() << "{";
       if ( !obj.isExist() ) {
-        str << "does not exist}";
+        str << Errno( obj.error() );
       } else {
         str << obj.asStatMode() << " " << std::dec << obj.owner() << "/" << obj.group();
 
         if ( obj.isFile() )
           str << " size " << obj.size();
-
-        str << "}";
       }
 
-      return str;
+      return str << "}";
     }
 
     ///////////////////////////////////////////////////////////////////
@@ -642,6 +646,9 @@ namespace zypp
 			 } );
     }
 
+    std::ostream & operator<<( std::ostream & str, const DirContent & obj )
+    { return dumpRange( str, obj.begin(), obj.end() ); }
+
     ///////////////////////////////////////////////////////////////////
     // is_empty_dir
     ///////////////////////////////////////////////////////////////////
@@ -837,6 +844,7 @@ namespace zypp
       {
         switch ( errno )
         {
+	  case EPERM: // /proc/sys/fs/protected_hardlink in proc(5)
           case EXDEV: // oldpath  and  newpath are not on the same mounted file system
             return copy( oldpath, newpath );
             break;

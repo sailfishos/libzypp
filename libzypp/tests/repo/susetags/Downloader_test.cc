@@ -28,26 +28,25 @@ BOOST_AUTO_TEST_CASE(susetags_download)
   keyring_callbacks.answerAcceptKey(KeyRingReport::KEY_TRUST_TEMPORARILY);
 
   Pathname p = DATADIR + "/stable-x86-subset";
-  Url url("dir:" + p.asString());
-  MediaSetAccess media(url);
+  MediaSetAccess media(p.asDirUrl());
   RepoInfo repoinfo;
   repoinfo.setAlias("testrepo");
   repoinfo.setPath("/");
   susetags::Downloader downloader(repoinfo);
   filesystem::TmpDir tmp;
-  
+
   Pathname localdir(tmp.path());
-  
+
   downloader.download(media,localdir);
-  
+
   MIL << "All files downloaded" << endl;
-  
+
   const char* files[] =
   {
     "/suse",
     "/suse/setup",
     "/suse/setup/descr",
-    "/suse/setup/descr/kde-10.3-71.i586.pat",
+    "/suse/setup/descr/kde-10.3-71.noarch.pat",
     "/suse/setup/descr/packages",
     "/suse/setup/descr/packages.DU",
     "/suse/setup/descr/packages.en",
@@ -71,7 +70,7 @@ BOOST_AUTO_TEST_CASE(susetags_download)
     "/gpg-pubkey-0dfb3188-41ed929b.asc",
     NULL
   };
-  
+
   int i=0;
   while ( files[i] != NULL )
   {
@@ -87,24 +86,23 @@ BOOST_AUTO_TEST_CASE(susetags_gz_download)
   keyring_callbacks.answerAcceptKey(KeyRingReport::KEY_TRUST_TEMPORARILY);
 
   Pathname p = DATADIR + "/stable-x86-subset-gz";
-  Url url("dir:" + p.asString());
-  MediaSetAccess media(url);
+  MediaSetAccess media(p.asDirUrl());
   RepoInfo repoinfo;
   repoinfo.setAlias("testrepo");
   repoinfo.setPath("/");
   susetags::Downloader downloader(repoinfo);
   filesystem::TmpDir tmp;
-  
+
   Pathname localdir(tmp.path());
-  
+
   downloader.download(media,localdir);
-  
+
   const char* files[] =
   {
     "/suse",
     "/suse/setup",
     "/suse/setup/descr",
-    "/suse/setup/descr/kde-10.3-71.i586.pat.gz",
+    "/suse/setup/descr/kde-10.3-71.noarch.pat.gz",
     "/suse/setup/descr/packages.gz",
     "/suse/setup/descr/packages.DU.gz",
     "/suse/setup/descr/packages.en.gz",
@@ -130,7 +128,7 @@ BOOST_AUTO_TEST_CASE(susetags_gz_download)
     "/gpg-pubkey-0dfb3188-41ed929b.asc",
     NULL
   };
-  
+
   int i=0;
   while ( files[i] != NULL )
   {

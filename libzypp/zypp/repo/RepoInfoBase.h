@@ -15,7 +15,7 @@
 #include <iosfwd>
 
 #include "zypp/base/PtrTypes.h"
-
+#include "zypp/APIConfig.h"
 #include "zypp/Pathname.h"
 
 ///////////////////////////////////////////////////////////////////
@@ -32,6 +32,9 @@ namespace zypp
     /**
      * \short Base class implementing common features of \ref RepoInfo and
      *        \ref ServiceInfo.
+     *
+     * \note Name is subject to repo variable replacement
+     * (\see \ref RepoVariablesStringReplacer).
      */
     class RepoInfoBase
     {
@@ -57,12 +60,16 @@ namespace zypp
       std::string escaped_alias() const;
 
       /**
-       * \short Repository short label
+       * \short Repository name
        *
-       * Short label or description of the repository.
+       * Short label or description of the repository. Defaults to \ref alias.
+       * Subject to repo variable replacement (\see \ref RepoVariablesStringReplacer).
        * ie: "SUSE Linux 10.2 updates"
        */
       std::string name() const;
+
+      /** The raw metadata name (no default, no variables replaced). */
+      std::string rawName() const;
 
       /**
        * \short Label for use in messages for the user interface.
@@ -70,6 +77,10 @@ namespace zypp
        * Returns an alias or name, according to ZConfig::repoLabelIsAlias().
        */
       std::string label() const;
+
+      /** User string: \ref label (alias or name) */
+      std::string asUserString() const
+      { return label(); }
 
       /**
        * If enabled is false, then this repository must be ignored as if does
@@ -135,22 +146,19 @@ namespace zypp
       virtual std::ostream & dumpOn( std::ostream & str ) const;
 
       /**
-       * Write this RepoInfoBase object into \a str in
-       * a <tr>.repo</tt> (ini) file format.
+       * Write this RepoInfoBase object into \a str in a <tr>.repo</tt> (ini) file format.
+       * Raw values, no variable replacement.
        */
       virtual std::ostream & dumpAsIniOn( std::ostream & str ) const;
 
       /**
-       * Write an XML representation of this object. Implement in
-       * derived classes.
-       */
-      virtual std::ostream & dumpAsXMLOn(std::ostream & str) const;
-
-      /**
        * Write an XML representation of this object with content (if available).
+       * Repo variables replaced.
        */
-      virtual std::ostream & dumpAsXMLOn(
-          std::ostream & str, const std::string & content) const;
+      virtual std::ostream & dumpAsXmlOn( std::ostream & str, const std::string & content = "" ) const;
+
+      /** \deprecated Use camel cased dumpAsXmlOn */
+      ZYPP_DEPRECATED std::ostream & dumpAsXMLOn( std::ostream & str, const std::string & content = "" ) const { return dumpAsXmlOn( str, content ); }
 
       class Impl;
     private:

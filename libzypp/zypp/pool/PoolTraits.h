@@ -40,7 +40,7 @@ namespace zypp
     struct ByPoolItem
     {
       bool operator()( const PoolItem & pi ) const
-      { return pi; }
+      { return bool(pi); }
     };
 
     /** In CXX0X std::_Select2nd does no longer derive from std::unary_function
@@ -83,10 +83,6 @@ namespace zypp
 
       /** list of known Repositories */
       typedef sat::Pool::RepositoryIterator	        repository_iterator;
-
-      /** soft locks */
-      typedef std::tr1::unordered_set<IdString>		AutoSoftLocks;
-      typedef AutoSoftLocks::const_iterator             autoSoftLocks_iterator;
 
       /** hard locks from etc/zypp/locks */
       typedef std::list<PoolQuery>			HardLockQueries;

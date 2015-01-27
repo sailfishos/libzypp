@@ -48,7 +48,17 @@ using std::endl;
 
 // ///////////////////////////////////////////////////////////////////
 namespace zypp
-{ /////////////////////////////////////////////////////////////////
+{
+  /////////////////////////////////////////////////////////////////
+  namespace env
+  {
+    /**  */
+    inline int LIBSOLV_DEBUGMASK()
+    {
+      const char * envp = getenv("LIBSOLV_DEBUGMASK");
+      return envp ? str::strtonum<int>( envp ) : 0;
+    }
+  } // namespace env
   ///////////////////////////////////////////////////////////////////
   namespace sat
   { /////////////////////////////////////////////////////////////////
@@ -143,13 +153,6 @@ namespace zypp
           }
           break;
 
-          case NAMESPACE_PRODUCTBUDDY:
-          {
-            PoolItem pi( (Solvable(rhs)) );
-            return( pi ? pi.buddy().id() : noId );
-          }
-
-          break;
         }
 
         WAR << "Unhandled " << Capability( lhs ) << " vs. " << Capability( rhs ) << endl;
@@ -180,13 +183,23 @@ namespace zypp
         {
           ZYPP_THROW( Exception( _("Can not create sat-pool.") ) );
         }
+        // by now we support only a RPM backend
+        ::pool_setdisttype(_pool, DISTTYPE_RPM );
+
         // initialialize logging
-	if ( getenv("ZYPP_LIBSOLV_FULLLOG") || getenv("ZYPP_LIBSAT_FULLLOG") )
-	  ::pool_setdebuglevel( _pool, 4 );
-	else if ( getenv("ZYPP_FULLLOG") )
-	  ::pool_setdebuglevel( _pool, 2 );
+	if ( env::LIBSOLV_DEBUGMASK() )
+	{
+	  ::pool_setdebugmask(_pool, env::LIBSOLV_DEBUGMASK() );
+	}
 	else
-	  ::pool_setdebugmask(_pool, SOLV_DEBUG_JOB|SOLV_DEBUG_STATS);
+	{
+	  if ( getenv("ZYPP_LIBSOLV_FULLLOG") || getenv("ZYPP_LIBSAT_FULLLOG") )
+	    ::pool_setdebuglevel( _pool, 3 );
+	  else if ( getenv("ZYPP_FULLLOG") )
+	    ::pool_setdebuglevel( _pool, 2 );
+	  else
+	    ::pool_setdebugmask(_pool, SOLV_DEBUG_JOB|SOLV_DEBUG_STATS );
+	}
 
         ::pool_setdebugcallback( _pool, logSat, NULL );
 
@@ -283,13 +296,10 @@ namespace zypp
       void PoolImpl::_deleteRepo( ::_Repo * repo_r )
       {
         setDirty(__FUNCTION__, repo_r->name );
-        ::repo_free( repo_r, /*reuseids*/false );
-        eraseRepoInfo( repo_r );
 	if ( isSystemRepo( repo_r ) )
-	{
-	  // systemRepo added
-	  _onSystemByUserListPtr.reset(); // re-evaluate
-	}
+	  _autoinstalled.clear();
+        eraseRepoInfo( repo_r );
+        ::repo_free( repo_r, /*reuseids*/false );
       }
 
       int PoolImpl::_addSolv( ::_Repo * repo_r, FILE * file_r )
@@ -352,11 +362,6 @@ namespace zypp
               blockBegin = blockSize = 0;
           }
         }
-        else
-	{
-	  // systemRepo added
-	  _onSystemByUserListPtr.reset(); // re-evaluate
-	}
       }
 
       detail::SolvableIdType PoolImpl::_addSolvables( ::_Repo * repo_r, unsigned count_r )
@@ -543,74 +548,6 @@ namespace zypp
             multiversionList.insert( IdString( *it ) );
           }
         }
-      }
-
-      void PoolImpl::onSystemByUserListInit() const
-      {
-	_onSystemByUserListPtr.reset( new OnSystemByUserList );
-	OnSystemByUserList & onSystemByUserList( *_onSystemByUserListPtr );
-
-	Pathname root( ZConfig::instance().systemRoot() );
-	if ( root.empty() )
-	{
-	  MIL << "Target not initialized." << endl;
-	  return;
-	}
-	PathInfo pi( root / ZConfig::instance().historyLogFile() );
-	MIL << "onSystemByUserList from history: " << pi << endl;
-	if ( ! pi.isFile() )
-	  return;
-
-	// go and parse it: 'who' must constain an '@', then it was installed by user request.
-	// 2009-09-29 07:25:19|install|lirc-remotes|0.8.5-3.2|x86_64|root@opensuse|InstallationImage|a204211eb0...
-	std::ifstream infile( pi.path().c_str() );
-	for( iostr::EachLine in( infile ); in; in.next() )
-	{
-	  const char * ch( (*in).c_str() );
-	  // start with year
-	  if ( *ch < '1' || '9' < *ch )
-	    continue;
-	  const char * sep1 = ::strchr( ch, '|' );	// | after date
-	  if ( !sep1 )
-	    continue;
-	  ++sep1;
-	  // if logs an install or delete
-	  bool installs = true;
-	  if ( ::strncmp( sep1, "install|", 8 ) )
-	  {
-	    if ( ::strncmp( sep1, "remove |", 8 ) )
-	      continue; // no install and no remove
-	      else
-		installs = false; // remove
-	  }
-	  sep1 += 8;					// | after what
-	  // get the package name
-	  const char * sep2 = ::strchr( sep1, '|' );	// | after name
-	  if ( !sep2 || sep1 == sep2 )
-	    continue;
-	  (*in)[sep2-ch] = '\0';
-	  IdString pkg( sep1 );
-	  // we're done, if a delete
-	  if ( !installs )
-	  {
-	    onSystemByUserList.erase( pkg );
-	    continue;
-	  }
-	  // now guess whether user installed or not (3rd next field contains 'user@host')
-	  if ( (sep1 = ::strchr( sep2+1, '|' ))		// | after version
-	    && (sep1 = ::strchr( sep1+1, '|' ))		// | after arch
-	    && (sep2 = ::strchr( sep1+1, '|' )) )	// | after who
-	  {
-	    (*in)[sep2-ch] = '\0';
-	    if ( ::strchr( sep1+1, '@' ) )
-	    {
-	      // by user
-	      onSystemByUserList.insert( pkg );
-	      continue;
-	    }
-	  }
-	}
-	MIL << "onSystemByUserList found: " << onSystemByUserList.size() << endl;
       }
 
       const std::set<std::string> & PoolImpl::requiredFilesystems() const

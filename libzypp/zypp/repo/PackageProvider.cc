@@ -10,6 +10,7 @@
  *
 */
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include "zypp/repo/PackageDelta.h"
 #include "zypp/base/Logger.h"
@@ -23,6 +24,7 @@
 #include "zypp/TmpPath.h"
 #include "zypp/ZConfig.h"
 #include "zypp/RepoInfo.h"
+#include "zypp/RepoManager.h"
 
 using std::endl;
 
@@ -83,19 +85,34 @@ namespace zypp
        */
       ManagedFile providePackage() const;
 
+      /** Provide the package if it is cached. */
+      ManagedFile providePackageFromCache() const
+      {
+	ManagedFile ret( doProvidePackageFromCache() );
+	if ( ! ( ret->empty() ||  _package->repoInfo().keepPackages() ) )
+	  ret.setDispose( filesystem::unlink );
+	return ret;
+      }
+
+      /** Whether the package is cached. */
+      bool isCached() const
+      { return ! doProvidePackageFromCache()->empty(); }
+
     protected:
       typedef PackageProvider::Impl	Base;
       typedef callback::SendReport<repo::DownloadResolvableReport>	Report;
 
       /** Lookup the final rpm in cache.
        *
-       * A non empty ManagedFile will be returned to the caller. File disposal
-       * depending on the repos keepPackages setting are handled in \ref providePackage.
+       * A non empty ManagedFile will be returned to the caller.
+       *
+       * \note File disposal depending on the repos keepPackages setting
+       * are not set here, but in \ref providePackage or \ref providePackageFromCache.
        *
        * \note The provoided default implementation returns an empty ManagedFile
        * (cache miss).
        */
-      virtual ManagedFile providePackageFromCache() const = 0;
+      virtual ManagedFile doProvidePackageFromCache() const = 0;
 
       /** Actually provide the final rpm.
        * Report start/problem/finish and retry loop are hadled by \ref providePackage.
@@ -174,7 +191,7 @@ namespace zypp
     ///////////////////////////////////////////////////////////////////
 
     /** Default implementation (cache miss). */
-    ManagedFile PackageProvider::Impl::providePackageFromCache() const
+    ManagedFile PackageProvider::Impl::doProvidePackageFromCache() const
     { return ManagedFile(); }
 
     /** Default implementation (provide full package) */
@@ -193,29 +210,54 @@ namespace zypp
 
     ManagedFile PackageProvider::Impl::providePackage() const
     {
-      Url url;
-      RepoInfo info = _package->repoInfo();
-      // FIXME we only support the first url for now.
-      if ( info.baseUrlsEmpty() )
-        ZYPP_THROW(Exception("No url in repository."));
-      else
-        url = * info.baseUrlsBegin();
+      ScopedGuard guardReport( newReport() );
 
       // check for cache hit:
       ManagedFile ret( providePackageFromCache() );
-      if ( ! ret.value().empty() )
+      if ( ! ret->empty() )
       {
-	if ( ! info.keepPackages() )
-	{
-	  ret.setDispose( filesystem::unlink );
-	}
 	MIL << "provided Package from cache " << _package << " at " << ret << endl;
+	report()->infoInCache( _package, ret );
 	return ret; // <-- cache hit
       }
 
-      // HERE: cache misss, do download:
+      // HERE: cache misss, check toplevel cache or do download:
+      RepoInfo info = _package->repoInfo();
+
+      // Check toplevel cache
+      {
+	RepoManagerOptions topCache;
+	if ( info.packagesPath().dirname() != topCache.repoPackagesCachePath )	// not using toplevel cache
+	{
+	  const OnMediaLocation & loc( _package->location() );
+	  if ( ! loc.checksum().empty() )	// no cache hit without checksum
+	  {
+	    PathInfo pi( topCache.repoPackagesCachePath / info.packagesPath().basename() / loc.filename() );
+	    if ( pi.isExist() && loc.checksum() == CheckSum( loc.checksum().type(), std::ifstream( pi.c_str() ) ) )
+	    {
+	      report()->start( _package, pi.path().asFileUrl() );
+	      const Pathname & dest( info.packagesPath() / loc.filename() );
+	      if ( filesystem::assert_dir( dest.dirname() ) == 0 && filesystem::hardlinkCopy( pi.path(), dest ) == 0 )
+	      {
+		ret = ManagedFile( dest );
+		if ( ! info.keepPackages() )
+		  ret.setDispose( filesystem::unlink );
+
+		MIL << "provided Package from toplevel cache " << _package << " at " << ret << endl;
+		report()->finish( _package, repo::DownloadResolvableReport::NO_ERROR, std::string() );
+		return ret; // <-- toplevel cache hit
+	      }
+	    }
+	  }
+	}
+      }
+
+      // FIXME we only support the first url for now.
+      if ( info.baseUrlsEmpty() )
+        ZYPP_THROW(Exception("No url in repository."));
+
       MIL << "provide Package " << _package << endl;
-      ScopedGuard guardReport( newReport() );
+      Url url = * info.baseUrlsBegin();
       do {
         _retry = false;
         report()->start( _package, url );
@@ -284,7 +326,7 @@ namespace zypp
       {}
 
     protected:
-      virtual ManagedFile providePackageFromCache() const;
+      virtual ManagedFile doProvidePackageFromCache() const;
 
       virtual ManagedFile doProvidePackage() const;
 
@@ -304,24 +346,9 @@ namespace zypp
     };
     ///////////////////////////////////////////////////////////////////
 
-    ManagedFile RpmPackageProvider::providePackageFromCache() const
+    ManagedFile RpmPackageProvider::doProvidePackageFromCache() const
     {
-      RepoInfo info = _package->repoInfo();
-      OnMediaLocation loc( _package->location() );
-      PathInfo cachepath( info.packagesPath() / loc.filename() );
-
-      if ( cachepath.isFile() && ! loc.checksum().empty() ) // accept cache hit with matching checksum only!
-             // Tempting to do a quick check for matching .rpm-filesize before computing checksum,
-      // but real life shows that loc.downloadSize() and the .rpm-filesize frequently do not
-      // match, even if loc.checksum() and the .rpm-files checksum do. Blame the metadata generator(s).
-      {
-	CheckSum cachechecksum( loc.checksum().type(), filesystem::checksum( cachepath.path(), loc.checksum().type() ) );
-	if ( cachechecksum == loc.checksum() )
-	{
-	  return ManagedFile( cachepath.path() );  // <-- cache hit
-	}
-      }
-      return ManagedFile();	// <-- cache miss
+      return ManagedFile( _package->cachedLocation() );
     }
 
     ManagedFile RpmPackageProvider::doProvidePackage() const
@@ -335,30 +362,23 @@ namespace zypp
         url = * info.baseUrlsBegin();
 
       // check whether to process patch/delta rpms
-      if ( url.schemeIsDownloading() || ZConfig::instance().download_use_deltarpm_always() )
-        {
-          std::list<DeltaRpm> deltaRpms;
-          if ( ZConfig::instance().download_use_deltarpm() )
-          {
-            _deltas.deltaRpms( _package ).swap( deltaRpms );
-          }
+      if ( ZConfig::instance().download_use_deltarpm()
+	&& ( url.schemeIsDownloading() || ZConfig::instance().download_use_deltarpm_always() ) )
+      {
+	std::list<DeltaRpm> deltaRpms;
+	_deltas.deltaRpms( _package ).swap( deltaRpms );
 
-          if ( ! ( deltaRpms.empty() )
-               && queryInstalled() )
-            {
-              if ( ! deltaRpms.empty() && applydeltarpm::haveApplydeltarpm() )
-                {
-                  for( std::list<DeltaRpm>::const_iterator it = deltaRpms.begin();
-                       it != deltaRpms.end(); ++it )
-                    {
-                      DBG << "tryDelta " << *it << endl;
-                      ManagedFile ret( tryDelta( *it ) );
-                      if ( ! ret->empty() )
-                        return ret;
-                    }
-                }
-            }
-        }
+	if ( ! deltaRpms.empty() && queryInstalled() && applydeltarpm::haveApplydeltarpm() )
+	{
+	  for_( it, deltaRpms.begin(), deltaRpms.end())
+	  {
+	    DBG << "tryDelta " << *it << endl;
+	    ManagedFile ret( tryDelta( *it ) );
+	    if ( ! ret->empty() )
+	      return ret;
+	  }
+	}
+      }
 
       // no patch/delta -> provide full package
       return Base::doProvidePackage();
@@ -410,7 +430,7 @@ namespace zypp
       return ManagedFile( destination, filesystem::unlink );
     }
 
-
+#if 0
     ///////////////////////////////////////////////////////////////////
     /// \class PluginPackageProvider
     /// \brief Plugin PackageProvider implementation.
@@ -430,9 +450,9 @@ namespace zypp
       {}
 
     protected:
-      virtual ManagedFile providePackageFromCache() const
+      virtual ManagedFile doProvidePackageFromCache() const
       {
-	return Base::providePackageFromCache();
+	return Base::doProvidePackageFromCache();
       }
 
       virtual ManagedFile doProvidePackage() const
@@ -441,7 +461,7 @@ namespace zypp
       }
     };
     ///////////////////////////////////////////////////////////////////
-
+#endif
 
     ///////////////////////////////////////////////////////////////////
     //	class PackageProvider
@@ -468,6 +488,11 @@ namespace zypp
     ManagedFile PackageProvider::providePackage() const
     { return _pimpl->providePackage(); }
 
+    ManagedFile PackageProvider::providePackageFromCache() const
+    { return _pimpl->providePackageFromCache(); }
+
+    bool PackageProvider::isCached() const
+    { return _pimpl->isCached(); }
 
   } // namespace repo
   ///////////////////////////////////////////////////////////////////

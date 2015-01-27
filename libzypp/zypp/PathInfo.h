@@ -27,6 +27,7 @@ extern "C"
 #include <set>
 #include <map>
 
+#include "zypp/APIConfig.h"
 #include "zypp/Pathname.h"
 #include "zypp/CheckSum.h"
 #include "zypp/ByteCount.h"
@@ -359,8 +360,13 @@ namespace zypp
       dev_t  dev()     const { return isExist() ? statbuf_C.st_dev  : 0; }
       dev_t  rdev()    const { return isExist() ? statbuf_C.st_rdev : 0; }
 
-      unsigned int major() const;
-      unsigned int minor() const;
+      unsigned int devMajor() const;
+      unsigned int devMinor() const;
+
+      /** \deprecated Name clashes with GNU libc macro, use \ref devMajor instead. */
+      unsigned int major() const ZYPP_DEPRECATED;
+      /** \deprecated Name clashes with GNU libc macro, use \ref devMinor instead. */
+      unsigned int minor() const ZYPP_DEPRECATED;
       //@}
 
       /** \name Size info. */
@@ -540,8 +546,13 @@ namespace zypp
       bool operator==( const DirEntry &rhs ) const;
     };
 
+    inline std::ostream & operator<<( std::ostream & str, const DirEntry & obj )
+    { return str << '[' << obj.type << "] " << obj.name; }
+
     /** Returned by readdir. */
     typedef std::list<DirEntry> DirContent;
+
+    std::ostream & operator<<( std::ostream & str, const DirContent & obj );
 
     /**
      * Return content of directory via retlist. If dots is false

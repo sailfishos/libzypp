@@ -45,43 +45,86 @@ BOOST_AUTO_TEST_CASE(testsplitEscaped)
   string s( "simple non-escaped string" );
   vector<string> v;
 
-  insert_iterator<vector<string> > ii (v,v.end());
-  splitEscaped( s, ii );
+  splitEscaped( s, std::back_inserter(v) );
   BOOST_CHECK_EQUAL( v.size(), 3 );
+  BOOST_CHECK_EQUAL( v[0], "simple" );
+  BOOST_CHECK_EQUAL( v[1], "non-escaped" );
+  BOOST_CHECK_EQUAL( v[2], "string" );
 
   v.clear();
   s = string( "\"escaped sentence \"" );
-  ii = insert_iterator<vector<string> >( v, v.end() );
-  splitEscaped( s, ii );
+  splitEscaped( s, std::back_inserter(v) );
   BOOST_CHECK_EQUAL( v.size(), 1 );
-  BOOST_CHECK_EQUAL( v.front(), string( "escaped sentence " ) );
+  BOOST_CHECK_EQUAL( v[0], "escaped sentence " );
 
   v.clear();
   s = string( "\"escaped \\\\sent\\\"ence \\\\\"" );
-  ii = insert_iterator<vector<string> >( v, v.end() );
-  splitEscaped( s, ii );
+  splitEscaped( s, std::back_inserter(v) );
   BOOST_CHECK_EQUAL( v.size(), 1 );
-  BOOST_CHECK_EQUAL( v.front(), string( "escaped \\sent\"ence \\" ) );
-
+  BOOST_CHECK_EQUAL( v[0], "escaped \\sent\"ence \\" );
 
   v.clear();
   s = string( "escaped sentence\\ with\\ space" );
-  ii = insert_iterator<vector<string> >( v, v.end() );
-  splitEscaped( s, ii );
+  splitEscaped( s, std::back_inserter(v) );
   BOOST_CHECK_EQUAL( v.size(), 2 );
-  BOOST_CHECK_EQUAL( v[1], string( "sentence with space" ) );
+  BOOST_CHECK_EQUAL( v[0], "escaped" );
+  BOOST_CHECK_EQUAL( v[1], "sentence with space" );
 
   // split - join
   v.clear();
   s = "some line \"\" foo\\ a foo\\\\ b";
   str::splitEscaped( s, std::back_inserter(v) );
+  BOOST_CHECK_EQUAL( v.size(), 6 );
+  BOOST_CHECK_EQUAL( v[0], "some" );
+  BOOST_CHECK_EQUAL( v[1], "line" );
+  BOOST_CHECK_EQUAL( v[2], "" );
+  BOOST_CHECK_EQUAL( v[3], "foo a" );
+  BOOST_CHECK_EQUAL( v[4], "foo\\" );
+  BOOST_CHECK_EQUAL( v[5], "b" );
   BOOST_CHECK_EQUAL( s, str::joinEscaped( v.begin(), v.end() ) );
 
   // split - join using alternate sepchar
   s = str::joinEscaped( v.begin(), v.end(), 'o' );
   v.clear();
   str::splitEscaped( s, std::back_inserter(v), "o" );
+  BOOST_CHECK_EQUAL( v.size(), 6 );
+  BOOST_CHECK_EQUAL( v[0], "some" );
+  BOOST_CHECK_EQUAL( v[1], "line" );
+  BOOST_CHECK_EQUAL( v[2], "" );
+  BOOST_CHECK_EQUAL( v[3], "foo a" );
+  BOOST_CHECK_EQUAL( v[4], "foo\\" );
+  BOOST_CHECK_EQUAL( v[5], "b" );
   BOOST_CHECK_EQUAL( s, str::joinEscaped( v.begin(), v.end(), 'o' ) );
+}
+
+BOOST_AUTO_TEST_CASE(bnc_909772)
+{
+  // While \-escaping processes single-quote, double-quote, backslash and sepchar[ ]
+  // deescaping failed to process the quotes correctly.
+  std::string s;
+  std::vector<std::string> v;
+
+  v.clear();
+  v.push_back("");
+  v.push_back("'\" \\");
+  v.push_back("\\'\\\"\\ \\\\");
+  s = str::joinEscaped( v.begin(), v.end() );
+  BOOST_CHECK_EQUAL( s, "\"\""  " "  "\\'\\\"\\ \\\\"  " "  "\\\\\\'\\\\\\\"\\\\\\ \\\\\\\\" );
+
+  s += " ";
+  s += "'"   "\\\\\" \\ \\\\"   "'\\ single";	// single quote: all literal, no ' inside
+
+  s += " ";
+  s += "\""   "\\'\\\" \\ \\\\"   "\"\\ double";// double quote: all literal except \\ \"
+
+  v.clear();
+  splitEscaped( s, std::back_inserter(v) );
+  BOOST_CHECK_EQUAL( v.size(), 5 );
+  BOOST_CHECK_EQUAL( v[0], "" );
+  BOOST_CHECK_EQUAL( v[1], "'\" \\" );
+  BOOST_CHECK_EQUAL( v[2], "\\'\\\"\\ \\\\" );
+  BOOST_CHECK_EQUAL( v[3], "\\\\\" \\ \\\\ single" );
+  BOOST_CHECK_EQUAL( v[4], "\\'\" \\ \\ double" );
 }
 
 BOOST_AUTO_TEST_CASE(testsplitEscapedWithEmpty)
@@ -276,8 +319,30 @@ BOOST_AUTO_TEST_CASE(hexencode_hexdecode)
   }
 
   std::string d( str::hexdecode( e ) );
+  // decoded equals original
   BOOST_CHECK( o == d );
-//   for ( unsigned i = 0; i < 255; ++i )
-//     if ( o[i] != d[i] )
-//       WAR << i << " " << unsigned(o[i]) << " != " << unsigned(d[i]) << endl;
+
+  // Test %XX is decoded for hexdigits only
+  const char *const dig = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  for ( const char * d1 = dig; *d1; ++d1 )
+    for ( const char * d2 = dig; *d2; ++d2 )
+    {
+      std::string eu( "%" );
+      eu += *d1; eu += *d2;
+      std::string el( str::toLower(eu) );
+
+      std::string u( str::hexdecode( eu ) );
+      std::string l( str::hexdecode( el ) );
+
+      if ( *d1 <= 'F' &&  *d2 <= 'F' )
+      {
+	BOOST_CHECK_EQUAL( u, l );		// no matter if upper or lower case hexdigit
+	BOOST_CHECK_EQUAL( u.size(), 1 );	// size 1 == decoded
+      }
+      else
+      {
+	BOOST_CHECK_EQUAL( u, eu );		// no hexdigits remain unchanged
+	BOOST_CHECK_EQUAL( l, el );
+     }
+    }
 }

@@ -188,6 +188,11 @@ namespace zypp
   extern const Arch Arch_s390;
 
   /** \relates Arch */
+  extern const Arch Arch_ppc64le;
+
+  /** \relates Arch */
+  extern const Arch Arch_ppc64p7;
+  /** \relates Arch */
   extern const Arch Arch_ppc64;
   /** \relates Arch */
   extern const Arch Arch_ppc;
@@ -222,6 +227,8 @@ namespace zypp
   extern const Arch Arch_sparc;
 
   /** \relates Arch */
+  extern const Arch Arch_aarch64;
+  /** \relates Arch */
   extern const Arch Arch_armv7tnhl;
   /** \relates Arch */
   extern const Arch Arch_armv7thl;
@@ -231,6 +238,8 @@ namespace zypp
   extern const Arch Arch_armv7hl;
   /** \relates Arch */
   extern const Arch Arch_armv7l;
+  /** \relates Arch */
+  extern const Arch Arch_armv6hl;
   /** \relates Arch */
   extern const Arch Arch_armv6l;
   /** \relates Arch */
@@ -253,6 +262,9 @@ namespace zypp
   extern const Arch Arch_sh4;
   /** \relates Arch */
   extern const Arch Arch_sh4a;
+
+  /** \relates Arch */
+  extern const Arch Arch_m68k;
   //@}
 
   ///////////////////////////////////////////////////////////////////
@@ -260,6 +272,10 @@ namespace zypp
   /** \relates Arch stream output. */
   inline std::ostream & operator<<( std::ostream & str, const Arch & obj )
   { return str << obj.asString(); }
+
+  /** \relates Arch XML output. */
+  inline std::ostream & dumpAsXmlOn( std::ostream & str, const Arch & obj )
+  { return str << "<arch>" << obj <<  "</arch>"; }
 
   /** \name Equality based on string value. */
   //@{

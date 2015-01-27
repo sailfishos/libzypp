@@ -4,9 +4,32 @@ SET( PACKAGE "libzypp" )
 SET( CMAKE_MODULE_PATH ${LIBZYPP_SOURCE_DIR}/cmake/modules )
 cmake_minimum_required(VERSION 2.6)
 
+OPTION (ENABLE_BUILD_DOCS "Build documentation by default?" OFF)
+OPTION (ENABLE_BUILD_TRANS "Build translation files by default?" OFF)
+OPTION (ENABLE_BUILD_TESTS "Build and run test suite by default?" OFF)
 
 OPTION (DISABLE_LIBPROXY "Build without libproxy support even if package is installed?" OFF)
 OPTION (DISABLE_AUTODOCS "Do not require doxygen being installed (required to build autodocs)?" OFF)
+
+#--------------------------------------------------------------------------------
+SET (have_system x)
+
+IF (DEBIAN)
+  MESSAGE (STATUS "Building for Debian")
+  SET (ENABLE_BUILD_DOCS ON)
+  SET (ENABLE_BUILD_TRANS ON)
+  SET (ENABLE_BUILD_TESTS ON)
+  SET (have_system ${have_system}x)
+ENDIF (DEBIAN)
+
+IF (${have_system} STREQUAL x)
+  MESSAGE (STATUS "Building for SUSE")
+ENDIF (${have_system} STREQUAL x)
+
+IF (${have_system} STRGREATER xx)
+  MESSAGE (FATAL_ERROR "Can only build for one system type.")
+ENDIF (${have_system} STRGREATER xx)
+#--------------------------------------------------------------------------------
 
 # allow name libraries by name mixed with full
 # paths
@@ -29,8 +52,8 @@ include(CheckCXXCompilerFlag)
 CHECK_C_COMPILER_FLAG("-Werror=format-security" CC_FORMAT_SECURITY)
 CHECK_CXX_COMPILER_FLAG("-Werror=format-security" CXX_FORMAT_SECURITY)
 
-SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility-inlines-hidden -fno-strict-aliasing -fPIC -g -Wall -Woverloaded-virtual -Wnon-virtual-dtor -Wl,-as-needed -std=c++0x" )
-SET( CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -fno-strict-aliasing -fPIC -g -Wall -Wl,-as-needed" )
+SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility-inlines-hidden -fno-strict-aliasing -fPIC -g -rdynamic -Wall -Woverloaded-virtual -Wnon-virtual-dtor -Wl,-as-needed -std=c++11" )
+SET( CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -fno-strict-aliasing -fPIC -g -rdynamic -Wall -Wl,-as-needed" )
 
 set( CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} -O3" )
 set( CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -O3" )
@@ -62,7 +85,7 @@ MACRO(ADD_TESTS)
   FOREACH( loop_var ${ARGV} )
     SET_SOURCE_FILES_PROPERTIES( ${loop_var}_test.cc COMPILE_FLAGS "-DBOOST_TEST_DYN_LINK -DBOOST_TEST_MAIN -DBOOST_AUTO_TEST_MAIN=\"\" " )
     ADD_EXECUTABLE( ${loop_var}_test ${loop_var}_test.cc )
-    TARGET_LINK_LIBRARIES( ${loop_var}_test  zypp boost_unit_test_framework zypp_test_utils)
+    TARGET_LINK_LIBRARIES( ${loop_var}_test  zypp ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} zypp_test_utils)
     ADD_TEST( ${loop_var}_test ${CMAKE_CURRENT_BINARY_DIR}/${loop_var}_test --catch_system_errors=no)
   ENDFOREACH( loop_var )
 ENDMACRO(ADD_TESTS)
@@ -90,7 +113,7 @@ ELSE ( NOT RPM_FOUND)
   endif ( RPM_SUSPECT_VERSION STREQUAL "5.x" )
 ENDIF( NOT RPM_FOUND)
 
-FIND_PACKAGE(Boost REQUIRED COMPONENTS program_options unit_test_framework)
+FIND_PACKAGE(Boost REQUIRED COMPONENTS program_options thread unit_test_framework)
 IF (Boost_FOUND)
   MESSAGE( STATUS "boost found: includes in ${Boost_INCLUDE_DIRS}, library in ${Boost_LIBRARY_DIRS}")
   INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
@@ -105,19 +128,19 @@ ELSE (GETTEXT_FOUND)
   MESSAGE( FATAL_ERROR "Gettext not found" )
 ENDIF (GETTEXT_FOUND)
 
-FIND_PACKAGE(Curl REQUIRED)
+FIND_PACKAGE(CURL REQUIRED)
 IF ( NOT CURL_FOUND)
   MESSAGE( FATAL_ERROR " curl not found" )
 ELSE ( NOT CURL_FOUND)
-  INCLUDE_DIRECTORIES(${CURL_INCLUDE_DIR})
+  INCLUDE_DIRECTORIES(${CURL_INCLUDE_DIRS})
 ENDIF( NOT CURL_FOUND)
 
-FIND_PACKAGE(Libxml REQUIRED)
-IF ( NOT LIBXML_FOUND)
+FIND_PACKAGE(LibXml2 REQUIRED)
+IF ( NOT LIBXML2_FOUND)
   MESSAGE( FATAL_ERROR " libxml not found" )
-ELSE ( NOT LIBXML_FOUND)
-  INCLUDE_DIRECTORIES(${LIBXML_INCLUDE_DIR})
-ENDIF( NOT LIBXML_FOUND)
+ELSE ( NOT LIBXML2_FOUND)
+  INCLUDE_DIRECTORIES(${LIBXML2_INCLUDE_DIR})
+ENDIF( NOT LIBXML2_FOUND)
 
 FIND_PACKAGE(ZLIB REQUIRED)
 IF ( NOT ZLIB_FOUND)
@@ -213,15 +236,23 @@ INSTALL( FILES ${LIBZYPP_SOURCE_DIR}/zypp-history.lr DESTINATION ${SYSCONFDIR}/l
 ####################################################################
 
 ADD_SUBDIRECTORY( zypp )
-#ADD_SUBDIRECTORY( zypp2 )
 # do not build devel by default
 ADD_SUBDIRECTORY( devel EXCLUDE_FROM_ALL )
 ADD_SUBDIRECTORY( tools )
 ADD_SUBDIRECTORY( examples )
-ADD_SUBDIRECTORY( po EXCLUDE_FROM_ALL )
 ADD_SUBDIRECTORY( doc )
 ADD_SUBDIRECTORY( vendor )
-ADD_SUBDIRECTORY( tests EXCLUDE_FROM_ALL )
 
+IF ( ENABLE_BUILD_TRANS )
+  ADD_SUBDIRECTORY( po )
+ELSE ( ENABLE_BUILD_TRANS )
+  ADD_SUBDIRECTORY( po EXCLUDE_FROM_ALL )
+ENDIF ( ENABLE_BUILD_TRANS )
+
+IF ( ENABLE_BUILD_TESTS )
+  ADD_SUBDIRECTORY( tests )
+ELSE ( ENABLE_BUILD_TESTS )
+  ADD_SUBDIRECTORY( tests EXCLUDE_FROM_ALL )
+ENDIF ( ENABLE_BUILD_TESTS )
 INCLUDE(CTest)
 ENABLE_TESTING()

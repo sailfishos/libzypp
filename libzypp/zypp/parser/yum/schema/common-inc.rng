@@ -114,6 +114,7 @@
       <value>sparcv9</value>
       <value>sparcv8</value>
       <value>sparc</value>
+      <value>aarch64</value>
       <value>armv7tnhl</value>
       <value>armv7thl</value>
       <value>armv7nhl</value>
@@ -129,6 +130,7 @@
       <value>sh3</value>
       <value>sh4</value>
       <value>sh4a</value>
+      <value>m68k</value>
       <value>src</value>
     </choice>
   </define>

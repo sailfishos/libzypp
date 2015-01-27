@@ -90,7 +90,7 @@ Resolver::Resolver (const ResPool & pool)
     , _allowVendorChange	( ZConfig::instance().solver_allowVendorChange() )
     , _solveSrcPackages		( false )
     , _cleandepsOnRemove	( ZConfig::instance().solver_cleandepsOnRemove() )
-    , _ignoreAlreadyRecommended	( false )
+    , _ignoreAlreadyRecommended	( true )
 
 {
     sat::Pool satPool( sat::Pool::instance() );
@@ -361,7 +361,10 @@ bool Resolver::resolveQueue( solver::detail::SolverQueueItemList & queue )
 
 sat::Transaction Resolver::getTransaction()
 {
-  return sat::Transaction( sat::Transaction::Default() );
+  // FIXME: That's an ugly way of pushing autoInstalled into the transaction.
+  sat::Transaction ret( sat::Transaction::loadFromPool );
+  ret.autoInstalled( _satResolver->autoInstalled() );
+  return ret;
 }
 
 

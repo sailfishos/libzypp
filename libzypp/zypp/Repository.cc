@@ -15,12 +15,15 @@
 #include "zypp/base/Logger.h"
 #include "zypp/base/Gettext.h"
 #include "zypp/base/Exception.h"
+#include "zypp/base/Xml.h"
 
 #include "zypp/AutoDispose.h"
 #include "zypp/Pathname.h"
 
 #include "zypp/sat/detail/PoolImpl.h"
 #include "zypp/Repository.h"
+#include "zypp/ResPool.h"
+#include "zypp/Product.h"
 #include "zypp/sat/Pool.h"
 
 using std::endl;
@@ -64,6 +67,9 @@ namespace zypp
     std::string Repository::name() const
     { return info().name(); }
 
+    std::string Repository::label() const
+    { return info().label(); }
+
     int Repository::satInternalPriority() const
     {
       NO_REPOSITORY_RETURN( INT_MIN );
@@ -76,6 +82,29 @@ namespace zypp
       return _repo->subpriority;
     }
 
+    Repository::ContentRevision Repository::contentRevision() const
+    {
+      NO_REPOSITORY_RETURN( ContentRevision() );
+      sat::LookupRepoAttr q( sat::SolvAttr::repositoryRevision, *this );
+      return q.empty() ? std::string() : q.begin().asString();
+    }
+
+    Repository::ContentIdentifier Repository::contentIdentifier() const
+    {
+      NO_REPOSITORY_RETURN( ContentIdentifier() );
+      sat::LookupRepoAttr q( sat::SolvAttr::repositoryRepoid, *this );
+      return q.empty() ? std::string() : q.begin().asString();
+    }
+
+    bool Repository::hasContentIdentifier( const ContentIdentifier & id_r ) const
+    {
+      NO_REPOSITORY_RETURN( false );
+      sat::LookupRepoAttr q( sat::SolvAttr::repositoryRepoid, *this );
+      for_( it, q.begin(), q.end() )
+	if ( it.asString() == id_r )
+	  return true;
+      return false;
+    }
 
     zypp::Date Repository::generatedTimestamp() const
     {
@@ -95,13 +124,21 @@ namespace zypp
       if ( q.empty() )
         return 0;
 
-      return generated + q.begin().asUnsigned();
+      return generated + Date(q.begin().asUnsigned());
     }
 
     Repository::Keywords Repository::keywords() const
     {
       NO_REPOSITORY_RETURN( Keywords() );
       return Keywords( sat::SolvAttr::repositoryKeywords, *this, sat::LookupAttr::REPO_ATTR );
+    }
+
+    bool Repository::hasKeyword( const std::string & val_r ) const
+    {
+      for ( const auto & val : keywords() )
+	if ( val == val_r )
+	  return true;
+      return false;
     }
 
     bool Repository::maybeOutdated() const
@@ -120,27 +157,63 @@ namespace zypp
       return suggestedExpirationTimestamp() < Date::now();
     }
 
-    bool Repository::providesUpdatesFor( const std::string &key ) const
+    bool Repository::providesUpdatesFor( const CpeId & cpeid_r ) const
     {
       NO_REPOSITORY_RETURN( false );
+      if ( ! cpeid_r )
+	return false;	// filter queries/products without CpeId, as an empty CpeId matches ANYthing.
 
-      for_( it,
-            updatesProductBegin(),
-            updatesProductEnd() )
+      // check in repository metadata
+      for_( it, updatesProductBegin(), updatesProductEnd() )
       {
-        // FIXME implement real CPE matching here
-        // someday
-        if ( key == it.cpeId() )
-          return true;
+	if ( compare( cpeid_r, it.cpeId(), SetRelation::subset ) )
+	  return true;
       }
 
+      // check whether known products refer to this as update repo
+      sat::LookupRepoAttr myIds( sat::SolvAttr::repositoryRepoid, *this );	// usually just one, but...
+      if ( ! myIds.empty() )
+      {
+	const ResPool & pool( ResPool::instance() );
+	for_( it, pool.byKindBegin<Product>(), pool.byKindEnd<Product>() )
+	{
+	  Product::constPtr prod( (*it)->asKind<Product>() );
+	  if ( compare( cpeid_r, prod->cpeId(), SetRelation::superset ) )
+	  {
+	    for_( myId, myIds.begin(), myIds.end() )
+	    {
+	      if ( prod->hasUpdateContentIdentifier( myId.asString() ) )
+		return true;
+	    }
+	  }
+	}
+      }
       return false;
     }
 
     bool Repository::isUpdateRepo() const
     {
       NO_REPOSITORY_RETURN( false );
-      return ( updatesProductBegin() != updatesProductEnd() );
+
+      // check in repository metadata
+      if ( updatesProductBegin() != updatesProductEnd() )
+	return true;
+
+      // check whether known products refer to this as update repo
+      sat::LookupRepoAttr myIds( sat::SolvAttr::repositoryRepoid, *this );	// usually just one, but...
+      if ( ! myIds.empty() )
+      {
+	const ResPool & pool( ResPool::instance() );
+	for_( it, pool.byKindBegin<Product>(), pool.byKindEnd<Product>() )
+	{
+	  for_( myId, myIds.begin(), myIds.end() )
+	  {
+	    if ( (*it)->asKind<Product>()->hasUpdateContentIdentifier( myId.asString() ) )
+	      return true;
+	  }
+	}
+      }
+      return false;
     }
 
     bool Repository::solvablesEmpty() const
@@ -308,6 +381,14 @@ namespace zypp
 		   << "}";
     }
 
+    std::ostream & dumpAsXmlOn( std::ostream & str, const Repository & obj )
+    {
+      return xmlout::node( str, "repository", {
+	{ "name", obj.name() },
+	{ "alias", obj.alias() }
+      } );
+    }
+
     //////////////////////////////////////////////////////////////////
     namespace detail
     {
@@ -336,8 +417,8 @@ namespace zypp
     std::string Repository::ProductInfoIterator::label() const
     { return base_reference().subFind( sat::SolvAttr::repositoryProductLabel ).asString(); }
 
-    std::string Repository::ProductInfoIterator::cpeId() const
-    { return base_reference().subFind( sat::SolvAttr::repositoryProductCpeid ).asString(); }
+    CpeId Repository::ProductInfoIterator::cpeId() const
+    { return CpeId( base_reference().subFind( sat::SolvAttr::repositoryProductCpeid ).asString(), CpeId::noThrow ); }
 
     /////////////////////////////////////////////////////////////////
 } // namespace zypp

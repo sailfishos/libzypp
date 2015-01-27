@@ -54,6 +54,7 @@ namespace zypp
    * name=Ruby repository (openSUSE_10.2)
    * type=rpm-md
    * baseurl=http://software.opensuse.org/download/ruby/openSUSE_10.2/
+   *         http://some.opensuse.mirror/ruby/openSUSE_10.2/
    * gpgcheck=1
    * gpgkey=http://software.opensuse.org/openSUSE-Build-Service.asc
    * enabled=1
@@ -62,6 +63,9 @@ namespace zypp
    *
    * \note A RepoInfo is a hint about how
    * to create a Repository.
+   *
+   * \note Name, baseUrls and mirrorUrl are subject to repo variable replacement
+   * (\see \ref RepoVariablesStringReplacer).
    */
   class RepoInfo : public repo::RepoInfoBase
   {
@@ -91,7 +95,7 @@ namespace zypp
        */
       void setPriority( unsigned newval_r );
 
-      typedef std::set<Url>           url_set;
+      typedef std::list<Url>          url_set;
       typedef url_set::size_type      urls_size_type;
       typedef transform_iterator<repo::RepoVariablesUrlReplacer, url_set::const_iterator> urls_const_iterator;
       /**
@@ -99,7 +103,8 @@ namespace zypp
        */
       bool baseUrlsEmpty() const;
       /**
-       * whether there are manualy configured repository urls
+       * Whether there are manualy configured repository urls.
+       * If \c false, a mirrorlist might be used.
        */
       bool baseUrlSet() const;
       /**
@@ -120,15 +125,17 @@ namespace zypp
       Url url() const
       { return( baseUrlsEmpty() ? Url() : *baseUrlsBegin()); }
       /**
+       * Pars pro toto: The first repository url (no variables replaced)
+       */
+      Url rawUrl() const;
+      /**
        * A Url under which the metadata are located, or a set of mirrors.
        *
        * This can't be empty in order the repository to be valid
        * unless the download of the mirror list succeeds and it
        * contains a valid url.
-       *
-       * \deprecated IMO superfluous as we provide begin/end iterator.
        */
-      std::set<Url> baseUrls() const;
+      url_set baseUrls() const;
       /**
        * Add a base url. \see baseUrls
        * \param url The base url for the repository.
@@ -174,6 +181,10 @@ namespace zypp
        * If empty, the base url will be used.
        */
       Url mirrorListUrl() const;
+      /**
+       * The raw mirrorListUrl (no variables replaced).
+       */
+      Url rawMirrorListUrl() const;
       /**
        * Set mirror list url. \see mirrorListUrl
        * \param url The base url for the list
@@ -302,6 +313,40 @@ namespace zypp
        */
       void setTargetDistribution(const std::string & targetDistribution);
 
+      /** Add content keywords */
+      void addContent( const std::string & keyword_r );
+      /** \overload add keywords from container */
+      template <class _Iterator>
+      void addContentFrom( _Iterator begin_r, _Iterator end_r )
+      { for_( it, begin_r, end_r ) addContent( *it ); }
+      /** \overload  */
+      template <class _Container>
+      void addContentFrom( const _Container & container_r )
+      { addContentFrom( container_r.begin(), container_r.end() ); }
+
+      /** Check for content keywords.
+       * Checking for an empty string returns whether content kewords are
+       * known at all. They may be missing due to missing metadata in disabled
+       * repos.
+       */
+      bool hasContent( const std::string & keyword_r = std::string() ) const;
+      /** \overload check for \b all keywords being present */
+      template <class _Iterator>
+      bool hasContentAll( _Iterator begin_r, _Iterator end_r ) const
+      { for_( it, begin_r, end_r ) if ( ! hasContent( *it ) ) return false; return true; }
+      /** \overload  */
+      template <class _Container>
+      bool hasContentAll( const _Container & container_r ) const
+      { return hasContentAll( container_r.begin(), container_r.end() ); }
+      /** \overload check for \b any keyword being present */
+      template <class _Iterator>
+      bool hasContentAny( _Iterator begin_r, _Iterator end_r ) const
+      { for_( it, begin_r, end_r ) if ( hasContent( *it ) ) return true; return false; }
+      /** \overload  */
+      template <class _Container>
+      bool hasContentAny( const _Container & container_r ) const
+      { return hasContentAny( container_r.begin(), container_r.end() ); }
+
     public:
       /** \name Repository license
       */
@@ -309,8 +354,14 @@ namespace zypp
       /** Whether there is a license associated with the repo. */
       bool hasLicense() const;
 
+      /** Whether the repo license has to be accepted, e.g. there is no
+       * no acceptance needed for openSUSE.
+       */
+      bool needToAcceptLicense() const;
+
       /** Return the best license for the current (or a specified) locale. */
-      std::string getLicense( const Locale & lang_r = Locale() );
+      std::string getLicense( const Locale & lang_r = Locale() ) const;
+      std::string getLicense( const Locale & lang_r = Locale() ); // LEGACY API
 
       /** Return the locales the license is available for.
        * \ref Locale::noCode is included in case of \c license.txt which does
@@ -335,22 +386,22 @@ namespace zypp
 
       /**
        * Write this RepoInfo object into \a str in a <tr>.repo</tt> file format.
+       * Raw values, no variable replacement.
        */
       virtual std::ostream & dumpAsIniOn( std::ostream & str ) const;
 
       /**
        * Write an XML representation of this RepoInfo object.
-       */
-      virtual std::ostream & dumpAsXMLOn(std::ostream & str) const;
-
-      /**
-       * Write an XML representation of this RepoInfo object.
+       * Repo variables replaced.
        *
        * \param str
        * \param content this argument is ignored (used in other classed derived
        *                from RepoInfoBase.
        */
-      virtual std::ostream & dumpAsXMLOn( std::ostream & str, const std::string & content ) const;
+      virtual std::ostream & dumpAsXmlOn( std::ostream & str, const std::string & content = "" ) const;
+
+      /** \deprecated Use camel cased dumpAsXmlOn */
+      ZYPP_DEPRECATED std::ostream & dumpAsXMLOn( std::ostream & str, const std::string & content = "" ) const { return dumpAsXmlOn( str, content ); }
 
       class Impl;
     private:

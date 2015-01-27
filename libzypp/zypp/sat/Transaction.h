@@ -19,12 +19,12 @@ extern "C"
 
 #include "zypp/base/PtrTypes.h"
 #include "zypp/base/Flags.h"
-#include "zypp/base/SafeBool.h"
 #include "zypp/base/Iterator.h"
 #include "zypp/base/DefaultIntegral.h"
 
 #include "zypp/sat/SolvIterMixin.h"
 #include "zypp/sat/Solvable.h"
+#include "zypp/sat/Queue.h"
 
 #include "zypp/PoolItem.h"
 
@@ -53,7 +53,6 @@ namespace zypp
      *       when iterating, use the \ref actionBegin /\ref actionEnd methods.
      */
     class Transaction : public SolvIterMixin<Transaction, detail::Transaction_const_iterator>
-		      , protected base::SafeBool<Transaction>
     {
       friend std::ostream & operator<<( std::ostream & str, const Transaction & obj );
       friend std::ostream & dumpOn( std::ostream & str, const Transaction & obj );
@@ -83,14 +82,15 @@ namespace zypp
        ZYPP_DECLARE_FLAGS(StepStages,StepStage);
 
      public:
-       struct Default {};	///< Ctor arg type
+       struct LoadFromPoolType {};	///< Ctor arg type
+       static constexpr LoadFromPoolType loadFromPool = LoadFromPoolType();
 
      public:
         /** Default ctor: empty transaction. */
         Transaction();
 
         /** Ctor loading the default pools transaction. */
-        Transaction( Default );
+        Transaction( LoadFromPoolType );
 
         /** Dtor */
         ~Transaction();
@@ -100,7 +100,8 @@ namespace zypp
 	bool valid() const;
 
         /**  Validate object in a boolean context: valid */
-        using base::SafeBool<Transaction>::operator bool_type;
+        explicit operator bool() const
+        { return valid(); }
 
 	/** Order transaction steps for commit.
 	 * It's cheap to call it for an aleready ordered \ref Transaction.
@@ -170,11 +171,18 @@ namespace zypp
 
 	//@}
 
-      private:
-        friend base::SafeBool<Transaction>::operator bool_type() const;
-        /**  Validate object in a boolean context. */
-        bool boolTest() const
-        { return valid(); }
+      public:
+	/** Return all packages that would be installed after the transaction is run.
+	 * The new packages are put at the head of the queue, the number of new
+	 * packages is returned. (wraps libsolv::transaction_installedresult) */
+	int installedResult( Queue & result_r ) const;
+
+	/** Return the ident strings of all packages that would be auto-installed after the transaction is run. */
+	StringQueue autoInstalled() const;
+
+	/** Set the ident strings of all packages that would be auto-installed after the transaction is run. */
+	void autoInstalled( const StringQueue & queue_r );
+
       public:
         /** Implementation  */
         class Impl;
