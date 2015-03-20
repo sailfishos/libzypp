@@ -117,27 +117,34 @@ namespace sat
   const SolvAttr SolvAttr::productDistversion    ( PRODUCT_DISTVERSION );
   const SolvAttr SolvAttr::productType           ( PRODUCT_TYPE );
   const SolvAttr SolvAttr::productFlags          ( PRODUCT_FLAGS );
+  const SolvAttr SolvAttr::productEndOfLife      ( PRODUCT_ENDOFLIFE );
   const SolvAttr SolvAttr::productRegisterTarget ( PRODUCT_REGISTER_TARGET );
   const SolvAttr SolvAttr::productRegisterRelease( PRODUCT_REGISTER_RELEASE );
+  const SolvAttr SolvAttr::productRegisterFlavor ( PRODUCT_REGISTER_FLAVOR );
   const SolvAttr SolvAttr::productUrl            ( PRODUCT_URL );
   const SolvAttr SolvAttr::productUrlType        ( PRODUCT_URL_TYPE );
+  /** array of repoids, hopefully label s too */
+  const SolvAttr SolvAttr::productUpdates		( PRODUCT_UPDATES );
+  const SolvAttr SolvAttr::productUpdatesRepoid		( PRODUCT_UPDATES_REPOID );
 
   // repository
-  const SolvAttr SolvAttr::repositoryTimestamp   ( REPOSITORY_TIMESTAMP );
-  const SolvAttr SolvAttr::repositoryExpire      ( REPOSITORY_EXPIRE );
+  const SolvAttr SolvAttr::repositoryDeltaInfo		( REPOSITORY_DELTAINFO );
+  const SolvAttr SolvAttr::repositoryAddedFileProvides	( REPOSITORY_ADDEDFILEPROVIDES );
+  const SolvAttr SolvAttr::repositoryRpmDbCookie	( REPOSITORY_RPMDBCOOKIE );
+  const SolvAttr SolvAttr::repositoryTimestamp		( REPOSITORY_TIMESTAMP );
+  const SolvAttr SolvAttr::repositoryExpire		( REPOSITORY_EXPIRE );
   /** array of repositoryProductLabel repositoryProductCpeid pairs */
-  const SolvAttr SolvAttr::repositoryUpdates     ( REPOSITORY_UPDATES );
+  const SolvAttr SolvAttr::repositoryUpdates		( REPOSITORY_UPDATES );
   /** array of repositoryProductLabel repositoryProductCpeid pairs */
-  const SolvAttr SolvAttr::repositoryDistros     ( REPOSITORY_DISTROS );
-  const SolvAttr SolvAttr::repositoryProductLabel( REPOSITORY_PRODUCT_LABEL );
-  const SolvAttr SolvAttr::repositoryProductCpeid( REPOSITORY_PRODUCT_CPEID );
-  const SolvAttr SolvAttr::repositoryKeywords    ( REPOSITORY_KEYWORDS );
-
-  const SolvAttr SolvAttr::repositoryAddedFileProvides( REPOSITORY_ADDEDFILEPROVIDES );
-  const SolvAttr SolvAttr::repositoryRpmDbCookie      ( REPOSITORY_RPMDBCOOKIE );
-  const SolvAttr SolvAttr::repositoryDeltaInfo        ( REPOSITORY_DELTAINFO );
-
+  const SolvAttr SolvAttr::repositoryDistros		( REPOSITORY_DISTROS );
+  const SolvAttr SolvAttr::repositoryProductLabel	( REPOSITORY_PRODUCT_LABEL );
+  const SolvAttr SolvAttr::repositoryProductCpeid	( REPOSITORY_PRODUCT_CPEID );
+  const SolvAttr SolvAttr::repositoryRepoid		( REPOSITORY_REPOID );
+  const SolvAttr SolvAttr::repositoryKeywords		( REPOSITORY_KEYWORDS );
+  const SolvAttr SolvAttr::repositoryRevision		( REPOSITORY_REVISION );
   const SolvAttr SolvAttr::repositoryToolVersion	( REPOSITORY_TOOLVERSION );
+
+
 
   /////////////////////////////////////////////////////////////////
 

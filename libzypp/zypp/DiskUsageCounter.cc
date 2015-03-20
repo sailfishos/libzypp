@@ -19,9 +19,11 @@ extern "C"
 
 #include "zypp/base/Easy.h"
 #include "zypp/base/LogTools.h"
+#include "zypp/base/DtorReset.h"
 #include "zypp/base/String.h"
 
 #include "zypp/DiskUsageCounter.h"
+#include "zypp/ExternalProgram.h"
 #include "zypp/sat/Pool.h"
 #include "zypp/sat/detail/PoolImpl.h"
 
@@ -35,31 +37,8 @@ namespace zypp
   namespace
   { /////////////////////////////////////////////////////////////////
 
-    struct SatMap : private base::NonCopyable
+    DiskUsageCounter::MountPointSet calcDiskUsage( DiskUsageCounter::MountPointSet result, const Bitmap & installedmap_r )
     {
-      SatMap( unsigned capacity_r = 1 )
-      {
-        ::map_init( &_installedmap, sat::Pool::instance().capacity() );
-      }
-
-      void add( sat::Solvable solv_r )
-      {
-        MAPSET( &_installedmap, solv_r.id() );
-      }
-
-      void add( const PoolItem & pi_r )
-      { add( pi_r->satSolvable() ); }
-
-      void add( const ResObject::constPtr & obj_r )
-      { add( obj_r->satSolvable() ); }
-
-      mutable ::Map _installedmap;
-    };
-
-    DiskUsageCounter::MountPointSet calcDiskUsage( const DiskUsageCounter::MountPointSet & mps_r, const SatMap & installedmap_r )
-    {
-      DiskUsageCounter::MountPointSet result = mps_r;
-
       if ( result.empty() )
       {
         // partitioning is not set
@@ -69,20 +48,21 @@ namespace zypp
       sat::Pool satpool( sat::Pool::instance() );
 
       // init libsolv result vector with mountpoints
-      static const ::DUChanges _initdu = { 0, 0, 0 };
+      static const ::DUChanges _initdu = { 0, 0, 0, 0 };
       std::vector< ::DUChanges> duchanges( result.size(), _initdu );
       {
         unsigned idx = 0;
         for_( it, result.begin(), result.end() )
         {
           duchanges[idx].path = it->dir.c_str();
+	  if ( it->growonly )
+	    duchanges[idx].flags |= DUCHANGES_ONLYADD;
           ++idx;
         }
       }
-
       // now calc...
       ::pool_calc_duchanges( satpool.get(),
-                             &installedmap_r._installedmap,
+                             const_cast<Bitmap &>(installedmap_r),
                              &duchanges[0],
                              duchanges.size() );
 
@@ -92,7 +72,6 @@ namespace zypp
         for_( it, result.begin(), result.end() )
         {
           static const ByteCount blockAdjust( 2, ByteCount::K ); // (files * blocksize) / (2 * 1K)
-
           it->pkg_size = it->used_size          // current usage
                        + duchanges[idx].kbytes  // package data size
                        + ( duchanges[idx].files * it->block_size / blockAdjust ); // half block per file
@@ -107,29 +86,44 @@ namespace zypp
   } // namespace
   ///////////////////////////////////////////////////////////////////
 
-  DiskUsageCounter::MountPointSet DiskUsageCounter::disk_usage( const ResPool & pool_r )
+  DiskUsageCounter::MountPointSet DiskUsageCounter::disk_usage( const ResPool & pool_r ) const
   {
-    SatMap installedmap( sat::Pool::instance().capacity() );
+    Bitmap bitmap( Bitmap::poolSize );
+
     // build installedmap (installed != transact)
     // stays installed or gets installed
     for_( it, pool_r.begin(), pool_r.end() )
     {
       if ( it->status().isInstalled() != it->status().transacts() )
       {
-        installedmap.add( *it );
+        bitmap.set( sat::asSolvable()(*it).id() );
       }
     }
-    return calcDiskUsage( mps, installedmap );
+    return calcDiskUsage( _mps, bitmap );
   }
 
-  DiskUsageCounter::MountPointSet DiskUsageCounter::disk_usage( sat::Solvable solv_r )
+  DiskUsageCounter::MountPointSet DiskUsageCounter::disk_usage( sat::Solvable solv_r ) const
   {
-    SatMap installedmap;
-    installedmap.add( solv_r );
-    return calcDiskUsage( mps, installedmap );
+    Bitmap bitmap( Bitmap::poolSize );
+    bitmap.set( solv_r.id() );
+
+    // temp. unset @system Repo
+    DtorReset tmp( sat::Pool::instance().get()->installed );
+    sat::Pool::instance().get()->installed = nullptr;
+
+    return calcDiskUsage( _mps, bitmap );
   }
 
-  DiskUsageCounter::MountPointSet DiskUsageCounter::detectMountPoints(const std::string &rootdir)
+  DiskUsageCounter::MountPointSet DiskUsageCounter::disk_usage( const Bitmap & bitmap_r ) const
+  {
+    // temp. unset @system Repo
+    DtorReset tmp( sat::Pool::instance().get()->installed );
+    sat::Pool::instance().get()->installed = nullptr;
+
+    return calcDiskUsage( _mps, bitmap_r );
+  }
+
+  DiskUsageCounter::MountPointSet DiskUsageCounter::detectMountPoints( const std::string & rootdir )
   {
     DiskUsageCounter::MountPointSet ret;
 
@@ -148,12 +142,12 @@ namespace zypp
 	  if ( !(procmounts.fail() || procmounts.bad()) ) {
 	    // data to consume
 
-	    // rootfs 	/ 		rootfs 		rw 0 0
+	    // rootfs 		/ 		rootfs 		rw 0 0
 	    // /dev/root 	/ 		reiserfs	rw 0 0
-	    // proc 	/proc 		proc		rw 0 0
-	    // devpts 	/dev/pts 	devpts		rw 0 0
+	    // proc 		/proc 		proc		rw 0 0
+	    // devpts 		/dev/pts 	devpts		rw 0 0
 	    // /dev/hda5 	/boot 		ext2		rw 0 0
-	    // shmfs 	/dev/shm 	shm		rw 0 0
+	    // shmfs 		/dev/shm 	shm		rw 0 0
 	    // usbdevfs 	/proc/bus/usb 	usbdevfs	rw 0 0
 
 	    std::vector<std::string> words;
@@ -239,19 +233,45 @@ namespace zypp
 	    //
 	    // Check whether mounted readonly
 	    //
-	    bool ro = false;
+	    MountPoint::HintFlags hints;
+
 	    std::vector<std::string> flags;
 	    str::split( words[3], std::back_inserter(flags), "," );
 
 	    for ( unsigned i = 0; i < flags.size(); ++i ) {
 	      if ( flags[i] == "ro" ) {
-		ro = true;
+		hints |= MountPoint::Hint_readonly;
 		break;
 	      }
 	    }
-            if ( ro ) {
+            if ( hints.testFlag( MountPoint::Hint_readonly ) ) {
 	      DBG << "Filter ro mount point : " << l << std::endl;
 	      continue;
+	    }
+
+	    //
+	    // check for snapshotting btrfs
+	    //
+	    if ( words[2] == "btrfs" )
+	    {
+	      if ( geteuid() != 0 )
+	      {
+		DBG << "Assume snapshots on " << words[1] << ": non-root user can't check" << std::endl;
+		hints |= MountPoint::Hint_growonly;
+	      }
+	      else
+	      {
+		// For now just check whether there is
+		// at least one snapshot on the volume:
+		ExternalProgram prog({"btrfs","subvolume","list","-s",words[1]});
+		std::string line( prog.receiveLine() );
+		if ( ! line.empty() )
+		{
+		  DBG << "Found a snapshot on " << words[1] << ": " << line; // has trailing std::endl
+		  hints |= MountPoint::Hint_growonly;
+		}
+		prog.kill();
+	      }
 	    }
 
 	    //
@@ -260,7 +280,7 @@ namespace zypp
 	    struct statvfs sb;
 	    if ( statvfs( words[1].c_str(), &sb ) != 0 ) {
 	      WAR << "Unable to statvfs(" << words[1] << "); errno " << errno << std::endl;
-	      ret.insert( DiskUsageCounter::MountPoint( mp ) );
+	      ret.insert( DiskUsageCounter::MountPoint( mp, words[2], 0LL, 0LL, 0LL, 0LL, hints ) );
 	    }
 	    else
 	    {
@@ -272,9 +292,9 @@ namespace zypp
 		DBG << "Filter zero-sized mount point : " << l << std::endl;
 		continue;
 	      }
-	      ret.insert( DiskUsageCounter::MountPoint( mp, sb.f_bsize,
+	      ret.insert( DiskUsageCounter::MountPoint( mp, words[2], sb.f_bsize,
 		((long long)sb.f_blocks)*sb.f_bsize/1024,
-		((long long)(sb.f_blocks - sb.f_bfree))*sb.f_bsize/1024, 0LL, ro ) );
+		((long long)(sb.f_blocks - sb.f_bfree))*sb.f_bsize/1024, 0LL, hints ) );
 	    }
 	  }
 	}
@@ -296,9 +316,12 @@ namespace zypp
         << " ts: " << obj.totalSize()
         << " us: " << obj.usedSize()
         << " (+-: " << obj.commitDiff()
-        << ")]";
+        << ")" << (obj.readonly?"r":"") << (obj.growonly?"g":"") << " " << obj.fstype << "]";
     return str;
   }
+
+  std::ostream & operator<<( std::ostream & str, const DiskUsageCounter::MountPointSet & obj )
+  { return dumpRange( str, obj.begin(), obj.end() ); }
 
   /////////////////////////////////////////////////////////////////
 } // namespace zypp

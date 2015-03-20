@@ -109,6 +109,24 @@ namespace zypp
       { setTextLocale( defaultTextLocale() ); }
 
     public:
+      /** \name Maintain user data
+       * \see \ref zypp-userdata
+       */
+      //@{
+      /** Whether a (non empty) user data sting is defined. */
+      bool hasUserData() const;
+
+      /** User defined string value to be passed to log, history, plugins... */
+      std::string userData() const;
+
+      /** Set a new \ref userData string.
+       * \returns \c TRUE if the string was accepted; \c FALSE if the
+       * string was rejected due to nonprintable characters or newlines.
+       */
+      bool setUserData( const std::string & str_r );
+      //@}
+
+    public:
       /**
        * Path where the caches are kept (/var/cache/zypp)
        * \ingroup g_ZC_REPOCACHE
@@ -205,6 +223,11 @@ namespace zypp
        */
       long download_max_silent_tries() const;
 
+      /**
+       * Maximum time in seconds that you allow a transfer operation to take.
+       */
+      long download_transfer_timeout() const;
+
 
       /** Whether to consider using a deltarpm when downloading a package.
        * Config option <tt>download.use_deltarpm (true)</tt>
@@ -257,13 +280,6 @@ namespace zypp
       Pathname solver_checkSystemFile() const;
 
       /**
-       * Directory, which may or may not contain files in which
-       * dependencies described which has to be fulfilled for a
-       * running system.
-       */
-      Pathname solver_checkSystemFileDir() const;
-
-      /**
        * Whether vendor check is by default enabled.
        */
       bool solver_allowVendorChange() const;
@@ -308,6 +324,8 @@ namespace zypp
        */
       //@{
       const std::set<std::string> & multiversionSpec() const;
+      void multiversionSpec( std::set<std::string> new_r );
+      void clearMultiversionSpec();
       void addMultiversionSpec( const std::string & name_r );
       void removeMultiversionSpec( const std::string & name_r );
       //@}

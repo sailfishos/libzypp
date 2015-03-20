@@ -1,7 +1,7 @@
 #
 # spec file for package libzypp
 #
-# Copyright (c) 2005-2011 SUSE LINUX Products GmbH, Nuernberg, Germany.
+# Copyright (c) 2005-2013 SUSE LINUX Products GmbH, Nuernberg, Germany.
 #
 # All modifications and additions to the file contributed by third parties
 # remain the property of their copyright owners, unless otherwise agreed
@@ -15,17 +15,17 @@
 # Please submit bugfixes or comments via http://bugs.opensuse.org/
 #
 
-# norootforbuild
+
 %define force_gcc_46 0
 
-
 Name:           @PACKAGE@
+Version:        @VERSION@
+Release:        0
 License:        GPL-2.0+
+Url:            git://gitorious.org/opensuse/libzypp.git
+Summary:        Package, Patch, Pattern, and Product Management
 Group:          System/Packages
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
-Summary:        Package, Patch, Pattern, and Product Management
-Version:        @VERSION@
-Release:        1
 Source:         %{name}-%{version}.tar.bz2
 Source1:        %{name}-rpmlintrc
 Provides:       yast2-packagemanager
@@ -33,7 +33,8 @@ Obsoletes:      yast2-packagemanager
 
 # Features we provide (update doc/autoinclude/FeatureTest.doc):
 Provides:       libzypp(plugin) = 0
-Provides:       libzypp(plugin:commit) = 0
+Provides:       libzypp(plugin:appdata) = 0
+Provides:       libzypp(plugin:commit) = 1
 Provides:       libzypp(plugin:services) = 0
 Provides:       libzypp(plugin:system) = 0
 Provides:       libzypp(plugin:urlresolver) = 0
@@ -61,6 +62,7 @@ BuildRequires:  gcc-c++ >= 4.6
 %endif
 BuildRequires:  gettext-devel
 BuildRequires:  graphviz
+BuildRequires:  graphviz-gnome
 BuildRequires:  libxml2-devel
 %if 0%{?suse_version} != 1110
 # No libproxy on SLES
@@ -73,8 +75,9 @@ BuildRequires:  pkgconfig
 BuildRequires:  pkg-config
 %endif
 
-BuildRequires:  libsolv-devel
+BuildRequires:  libsolv-devel >= 0.6.7
 %if 0%{?suse_version} >= 1100
+BuildRequires:  libsolv-tools
 %requires_eq    libsolv-tools
 %else
 Requires:       libsolv-tools
@@ -131,29 +134,21 @@ Requires:       libcurl   >= %{min_curl_version}
 %description
 Package, Patch, Pattern, and Product Management
 
-Authors:
---------
-    Michael Andres <ma@suse.de>
-    Jiri Srain <jsrain@suse.cz>
-    Stefan Schubert <schubi@suse.de>
-    Duncan Mac-Vicar <dmacvicar@suse.de>
-    Klaus Kaempf <kkaempf@suse.de>
-    Marius Tomaschewski <mt@suse.de>
-    Stanislav Visnovsky <visnov@suse.cz>
-    Ladislav Slezak <lslezak@suse.cz>
-
 %package devel
-License:        GPL-2.0+
-Requires:       libzypp = %{version}
-Requires:       libxml2-devel
-Requires:       openssl-devel
-Requires:       rpm-devel
-Requires:       glibc-devel
-Requires:       zlib-devel
-Requires:       bzip2
-Requires:       popt-devel
+Summary:        Package, Patch, Pattern, and Product Management - developers files
+Group:          Development/Libraries/C and C++
+Provides:       yast2-packagemanager-devel
+Obsoletes:      yast2-packagemanager-devel
 Requires:       boost-devel
+Requires:       bzip2
+Requires:       glibc-devel
 Requires:       libstdc++-devel
+Requires:       libxml2-devel
+Requires:       libzypp = %{version}
+Requires:       openssl-devel
+Requires:       popt-devel
+Requires:       rpm-devel
+Requires:       zlib-devel
 %if 0%{?suse_version} >= 1130 || 0%{?fedora_version} >= 16
 Requires:       libudev-devel
 %else
@@ -177,24 +172,16 @@ Requires:       libcurl-devel >= %{min_curl_version}
 %else
 Requires:       libsolv-devel
 %endif
-Summary:        Package, Patch, Pattern, and Product Management - developers files
-Group:          System/Packages
-Provides:       yast2-packagemanager-devel
-Obsoletes:      yast2-packagemanager-devel
 
-%description -n libzypp-devel
+%description devel
 Package, Patch, Pattern, and Product Management - developers files
 
-Authors:
---------
-    Michael Andres <ma@suse.de>
-    Jiri Srain <jsrain@suse.cz>
-    Stefan Schubert <schubi@suse.de>
-    Duncan Mac-Vicar <dmacvicar@suse.de>
-    Klaus Kaempf <kkaempf@suse.de>
-    Marius Tomaschewski <mt@suse.de>
-    Stanislav Visnovsky <visnov@suse.cz>
-    Ladislav Slezak <lslezak@suse.cz>
+%package devel-doc
+Summary:        Package, Patch, Pattern, and Product Management - developers files
+Group:          Documentation/HTML
+
+%description devel-doc
+Package, Patch, Pattern, and Product Management - developers files
 
 %prep
 %setup -q
@@ -210,13 +197,20 @@ export CFLAGS="$RPM_OPT_FLAGS"
 export CXXFLAGS="$RPM_OPT_FLAGS"
 unset TRANSLATION_SET
 unset EXTRA_CMAKE_OPTIONS
-# SLE11-* might want its own translation set:
-%if 0%{?suse_version} == 1110
+# Same codebase, but SLES may use it's own translation set.
+#     suse_version
+# 	1110		SLES11
+# 	1315		SLES12
+%if 0%{?suse_version} == 1110 || 0%{?suse_version} == 1315
 if [ -f ../po/sle-zypp-po.tar.bz ]; then
   export TRANSLATION_SET=sle-zypp
-  export EXTRA_CMAKE_OPTIONS="-DDISABLE_LIBPROXY=ON"
 fi
 %endif
+# No libproxy on SLE11
+%if 0%{?suse_version} == 1110
+export EXTRA_CMAKE_OPTIONS="-DDISABLE_LIBPROXY=ON"
+%endif
+
 cmake -DCMAKE_INSTALL_PREFIX=%{_prefix} \
       -DDOC_INSTALL_DIR=%{_docdir} \
       -DLIB=%{_lib} \
@@ -253,6 +247,7 @@ mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/zypp/vendors.d
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/zypp/multiversion.d
 mkdir -p $RPM_BUILD_ROOT%{_prefix}/lib/zypp
 mkdir -p $RPM_BUILD_ROOT%{_prefix}/lib/zypp/plugins
+mkdir -p $RPM_BUILD_ROOT%{_prefix}/lib/zypp/plugins/appdata
 mkdir -p $RPM_BUILD_ROOT%{_prefix}/lib/zypp/plugins/commit
 mkdir -p $RPM_BUILD_ROOT%{_prefix}/lib/zypp/plugins/services
 mkdir -p $RPM_BUILD_ROOT%{_prefix}/lib/zypp/plugins/system
@@ -356,14 +351,18 @@ rm -rf "$RPM_BUILD_ROOT"
 %{_datadir}/zypp
 %{_bindir}/*
 %{_libdir}/libzypp*so.*
-%doc %{_mandir}/man5/locks.5.*
+%doc %{_mandir}/man1/*.1.*
+%doc %{_mandir}/man5/*.5.*
 
 %files devel
 %defattr(-,root,root)
 %{_libdir}/libzypp.so
-%{_docdir}/%{name}
 %{_includedir}/zypp
 %{_datadir}/cmake/Modules/*
 %{_libdir}/pkgconfig/libzypp.pc
+
+%files devel-doc
+%defattr(-,root,root)
+%{_docdir}/%{name}
 
 %changelog

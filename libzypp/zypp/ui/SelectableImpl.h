@@ -145,17 +145,13 @@ namespace zypp
       {
 	PoolItem defaultCand( defaultCandidate() );
 
-	if ( multiversionInstall() )
-	  return identicalInstalled( defaultCand ) ? PoolItem() : defaultCand;
+	// multiversionInstall: This returns the candidate for the last
+	// instance installed. Actually we'd need a list here.
 
         if ( installedEmpty() || ! defaultCand )
           return defaultCand;
         // Here: installed and defaultCand are non NULL and it's not a
         //       multiversion install.
-
-        // update candidate must come from the highest priority repo
-        if ( defaultCand->repoInfo().priority() != (*availableBegin())->repoInfo().priority() )
-          return PoolItem();
 
         PoolItem installed( installedObj() );
         // check vendor change
@@ -189,11 +185,11 @@ namespace zypp
 
       /** \copydoc Selectable::identicalAvailable( const PoolItem & )const */
       bool identicalAvailable( const PoolItem & rhs ) const
-      { return identicalAvailableObj( rhs ); }
+      { return bool(identicalAvailableObj( rhs )); }
 
       /** \copydoc Selectable::identicalInstalled( const PoolItem & )const */
       bool identicalInstalled( const PoolItem & rhs ) const
-      { return identicalInstalledObj( rhs ); }
+      { return bool(identicalInstalledObj( rhs )); }
 
       /** \copydoc Selectable::identicalAvailableObj( const PoolItem & rhs ) const */
       PoolItem identicalAvailableObj( const PoolItem & rhs ) const
@@ -363,7 +359,7 @@ namespace zypp
 
       PoolItem defaultCandidate() const
       {
-        if ( ! ( multiversionInstall() || installedEmpty() ) )
+        if ( ! installedEmpty() )
         {
           // prefer the installed objects arch and vendor
           bool solver_allowVendorChange( ResPool::instance().resolver().allowVendorChange() );

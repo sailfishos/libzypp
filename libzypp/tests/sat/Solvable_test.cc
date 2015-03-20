@@ -87,7 +87,7 @@ BOOST_AUTO_TEST_CASE(attributes)
     BOOST_CHECK_EQUAL(c, 2);
 }
 
-BOOST_AUTO_TEST_CASE(asString)
+BOOST_AUTO_TEST_CASE(asStringTest)
 {
   BOOST_CHECK_EQUAL( sat::Solvable(0).asString(), "noSolvable" );
   BOOST_CHECK_EQUAL( sat::Solvable(1).asString(), "systemSolvable" );
@@ -203,4 +203,10 @@ BOOST_AUTO_TEST_CASE(SplitIdent)
 
 }
 
+BOOST_AUTO_TEST_CASE(duData)
+{
+  DiskUsageCounter ducounter( DiskUsageCounter::justRootPartition() );
 
+  sat::Solvable s = *sat::WhatProvides( Capability("glibc-devel.x86_64 == 2.8.90-2.3") ).begin();
+  BOOST_CHECK_EQUAL( (*ducounter.disk_usage( s ).begin()).pkg_size, 30629 );
+}

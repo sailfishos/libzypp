@@ -17,6 +17,8 @@
 #include "zypp/RepoInfo.h"
 #include "zypp/IdString.h"
 
+#include "zypp/ui/Selectable.h"
+
 using namespace zypp;
 using namespace std;
 
@@ -71,15 +73,26 @@ namespace zypp
   {
     std::string ret = lookupStrAttribute( sat::SolvAttr::eula, lang_r );
     if ( ret.empty() && isKind<Product>() )
-      return repoInfo().getLicense( lang_r );
+    {
+      const RepoInfo & ri( repoInfo() );
+      if ( ri.needToAcceptLicense() || ! ui::Selectable::get( *this )->hasInstalledObj() )
+	ret = ri.getLicense( lang_r ); // bnc#908976: suppress informal license upon update
+    }
     return ret;
+  }
+
+  bool ResObject::needToAcceptLicense() const
+  {
+    if ( isKind<Product>() )
+      return repoInfo().needToAcceptLicense( );
+    return true;
   }
 
   std::string ResObject::distribution() const
   { return lookupStrAttribute( sat::SolvAttr::distribution ); }
 
-  std::string ResObject::cpeId() const
-  { return lookupStrAttribute( sat::SolvAttr::cpeid ); }
+  CpeId ResObject::cpeId() const
+  { return CpeId( lookupStrAttribute( sat::SolvAttr::cpeid ), CpeId::noThrow ); }
 
   ByteCount ResObject::installSize() const
   { return ByteCount( lookupNumAttribute( sat::SolvAttr::installsize ) ); }
@@ -95,13 +108,6 @@ namespace zypp
 
   Date ResObject::installtime() const
   { return Date( lookupNumAttribute( sat::SolvAttr::installtime ) ); }
-
-#warning DUMMY diskusage
-  const DiskUsage & ResObject::diskusage() const
-  {
-    static DiskUsage _du;
-    return _du;
-  }
 
    /////////////////////////////////////////////////////////////////
 } // namespace zypp
@@ -125,6 +131,7 @@ namespace zypp
     OUTS( Pattern );
     OUTS( Product );
     OUTS( SrcPackage );
+    OUTS( Application );
 #undef OUTS
     // unknow => return a plain ResObject
     return new ResObject( solvable_r );

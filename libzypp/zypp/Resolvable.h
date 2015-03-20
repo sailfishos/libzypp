@@ -49,10 +49,6 @@ namespace zypp
     typedef TraitsType::constPtrType constPtr;
 
   public:
-#ifndef SWIG // Swig treats it as syntax error
-    /** Whether this represents a valid- or no-solvable. */
-    using zypp::sat::Solvable::operator bool_type;	// Note: gcc bug #52841 prohibits using just sat::Solvable
-#endif
     /** Whether this represents an installed solvable. */
     bool isSystem() const
     { return sat::Solvable::isSystem(); }
@@ -172,12 +168,12 @@ namespace zypp
   // Specialization for Resolvable: Always true.
   template<>
     inline bool isKind<Resolvable>( const Resolvable::constPtr & p )
-    { return p; }
+    { return !!p; }
 
   // Specialization for ResObject: Always true.
   template<>
     inline bool isKind<ResObject>( const Resolvable::constPtr & p )
-    { return p; }
+    { return !!p; }
 
 
   /** Convert Resolvable::Ptr into Ptr of a certain Kind.

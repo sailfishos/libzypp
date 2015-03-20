@@ -38,19 +38,10 @@ namespace zypp
         /** Return the file path. */
         const Pathname & file();
 
-        /** Return the directory path. */
-        const Pathname & dir();
-
         /** Set configuration file of system requirements
 	 *  Should be used for testcase only   
 	 */
         bool setFile(const Pathname & file) const;
-
-        /** Set configuration directory for files of system
-	 *  requirements.
-         *  Should be used for testcase only
-	 */
-        bool setDir(const Pathname & dir) const;
 
         /** Returns a list of required system capabilities.
         */
@@ -63,8 +54,8 @@ namespace zypp
       private:
         /** Ctor taking the file to read. */
         SystemCheck();
-        bool loadFile(Pathname &file, bool reset_caps = true) const;
-	bool loadFiles() const;
+	bool loadFile() const;
+
     };
     ///////////////////////////////////////////////////////////////////
 

@@ -2,10 +2,11 @@ Name:           libzypp
 License:        GPL v2 or later
 Group:          System/Packages
 Summary:        Package, Patch, Pattern, and Product Management
-Version:        12.2.0
+Version:        14.35.0
 Release:        1
 Source:         %{name}-%{version}.tar.bz2
 Source1:        %{name}-rpmlintrc
+Patch0:         0001-zypp-PublicKey.cc-Use-GPG_BINARY-from-KeyRing.cc.patch
 BuildRequires:  cmake
 BuildRequires:  openssl-devel
 BuildRequires:  libudev-devel
@@ -73,6 +74,7 @@ Authors:
 
 %prep
 %setup -q -n %{name}-%{version}/%{name}
+%patch0 -p1
 
 %build
 mkdir -p build
@@ -217,4 +219,4 @@ fi
 %{_includedir}/zypp
 %{_datadir}/cmake/Modules/*
 %{_libdir}/pkgconfig/libzypp.pc
-%doc %_mandir/man5/locks.5.*
+%doc %{_mandir}/man?/*.?.gz

@@ -13,13 +13,13 @@
 #define ZYPP_SAT_REPOSITORY_H
 
 #include <iosfwd>
-#include "zypp/base/SafeBool.h"
 #include "zypp/Pathname.h"
 #include "zypp/sat/detail/PoolMember.h"
 #include "zypp/sat/LookupAttr.h"     // LookupAttrTools.h included at EOF
 #include "zypp/sat/Solvable.h"
 #include "zypp/RepoInfo.h"
 #include "zypp/Date.h"
+#include "zypp/CpeId.h"
 
 ///////////////////////////////////////////////////////////////////
 namespace zypp
@@ -35,8 +35,7 @@ namespace zypp
     //	CLASS NAME : Repository
     //
     /** */
-    class Repository : protected sat::detail::PoolMember,
-                       private base::SafeBool<Repository>
+    class Repository : protected sat::detail::PoolMember
     {
     public:
         typedef filter_iterator<detail::ByRepository, sat::detail::SolvableIterator> SolvableIterator;
@@ -44,6 +43,9 @@ namespace zypp
         typedef sat::detail::RepoIdType IdType;
 
         typedef sat::ArrayAttr<std::string,std::string> Keywords;
+
+	typedef std::string ContentRevision;
+	typedef std::string ContentIdentifier;
 
     public:
         /** Default ctor creates \ref noRepository.*/
@@ -58,10 +60,10 @@ namespace zypp
         /** Represents no \ref Repository. */
         static const Repository noRepository;
 
-#ifndef SWIG // Swig treats it as syntax error
         /** Evaluate \ref Repository in a boolean context (\c != \c noRepository). */
-        using base::SafeBool<Repository>::operator bool_type;
-#endif
+        explicit operator bool() const
+        { return get() != nullptr; }
+
         /** Reserved system repository alias \c @System. */
         static const std::string & systemRepoAlias();
 
@@ -82,6 +84,35 @@ namespace zypp
 
         /** Label to display for this repo. */
         std::string name() const;
+
+	/** Alias or name, according to \ref ZConfig::repoLabelIsAlias */
+	std::string label() const;
+
+	/** User string: \ref label (alias or name) */
+	std::string asUserString() const
+	{ return label(); }
+
+    public:
+	/** Timestamp or arbitrary user supplied string.
+	 * \c /repomd/revision/text() in \c repomd.xml.
+	 */
+	ContentRevision contentRevision() const;
+
+	/** Unique string identifying a repositories content.
+	 * \c /repomd/tags/repo/text() in \c repomd.xml.
+	 * \code
+	 * <repomd ....>
+	 *  <tags>
+	 *   <repo>obsrepository://build.suse.de/SUSE:Factory:Head:Internal/standard</repo>
+	 * \endcode
+	 * Semantically the value is just a plain string, even
+	 * if OBS often uses the location of the project as
+	 * unique identifyer.
+	 */
+	ContentIdentifier contentIdentifier() const;
+
+	/** Whether \a id_r matches this repos content identifier. */
+	bool hasContentIdentifier( const ContentIdentifier & id_r ) const;
 
         /**
          * Timestamp when this repository was generated
@@ -124,6 +155,9 @@ namespace zypp
          */
         Keywords keywords() const;
 
+	/** Whether \a val_r is present in keywords. */
+	bool hasKeyword( const std::string & val_r ) const;
+
         /**
          * The suggested expiration date of this repository
          * already passed
@@ -134,26 +168,21 @@ namespace zypp
          */
         bool maybeOutdated() const;
 
-        /**
-         * if the repository claims to update something then
-         * it is an update repository
-         *
-         * This is implemented by looking at the repository updates
-         * tag.
-         * \see http://en.opensuse.org/Standards/Rpm_Metadata#SUSE_repository_info_.28suseinfo.xml.29.2C_extensions_to_repomd.xml
+        /** Hint whether the Repo may provide updates for a product.
+	 *
+         * Either the repository claims to update a product via a repository updates
+         * tag in it's metadata or a known product lists the repositories ContentIdentifier
+	 * as required update repo.
          */
         bool isUpdateRepo() const;
 
-        /**
-         * wether the repository claims to update something \ref prod
-         * with key \ref cpeid
-         *
-         * \see zypp::Product::cpeId()
-         *
-         * See http://cpe.mitre.org/ for more information on the
-         * Common Platform Enumearation.
-         */
-        bool providesUpdatesFor( const std::string &cpeid ) const;
+        /** Hint whether the Repo may provide updates for a product identified by it's \ref CpeId
+	 *
+         * Either the repository claims to update a product via a repository updates
+         * tag in it's metadata or a known product lists the repositories ContentIdentifier
+	 * as required update repo.
+	 */
+        bool providesUpdatesFor( const CpeId & cpeid_r ) const;
 
         /** Whether \ref Repository contains solvables. */
         bool solvablesEmpty() const;
@@ -169,7 +198,7 @@ namespace zypp
 
     public:
 
-      /** Query class for Repository */
+      /** Query class for Repository related products */
       class ProductInfoIterator;
 
       /**
@@ -189,15 +218,18 @@ namespace zypp
       ProductInfoIterator compatibleWithProductEnd() const;
 
       /**
-       * Get an iterator to the beginning of the repository
-       * compatible distros.
+       * Get an iterator to the beginning of distos the repository
+       * provides upadates for.
+       * \note This is only a hint within the repositories metadata.
+       * The same realation might be expressed by a product listing
+       * this repositories ContentIdentifier as required update repo.
        * \see Repository::ProductInfoIterator
        */
       ProductInfoIterator updatesProductBegin() const;
 
       /**
-       * Get an iterator to the end of the repository
-       * compatible distros.
+       * Get an iterator to the end of distos the repository
+       * provides upadates for.
        * \see Repository::ProductInfoIterator
        */
       ProductInfoIterator updatesProductEnd() const;
@@ -273,11 +305,7 @@ namespace zypp
         int satInternalPriority() const;
         int satInternalSubPriority() const;
         //@}
-    private:
-#ifndef SWIG // Swig treats it as syntax error
-        friend base::SafeBool<Repository>::operator bool_type() const;
-#endif
-        bool boolTest() const { return get(); }
+
     private:
         IdType _id;
     };
@@ -285,6 +313,9 @@ namespace zypp
 
     /** \relates Repository Stream output */
     std::ostream & operator<<( std::ostream & str, const Repository & obj );
+
+    /** \relates Repository XML output */
+    std::ostream & dumpAsXmlOn( std::ostream & str, const Repository & obj );
 
     /** \relates Repository */
     inline bool operator==( const Repository & lhs, const Repository & rhs )
@@ -302,6 +333,9 @@ namespace zypp
     /**
      * Query class for Repository related products
      *
+     * Products are identified by CpeIds within the repositories metadata.
+     * \see http://en.opensuse.org/Standards/Rpm_Metadata#SUSE_repository_info_.28suseinfo.xml.29.2C_extensions_to_repomd.xml
+     *
      * The iterator does not provide a dereference
      * operator so you can do * on it, but you can
      * access the attributes of each related product
@@ -310,7 +344,7 @@ namespace zypp
      * \code
      * for_( it, repo.compatibleWithProductBegin(), repo.compatibleWithProductEnd() )
      * {
-     *   cout << it.cpeid() << endl;
+     *   cout << it.label() << ": " << it.cpeid() << endl;
      * }
      * \endcode
      *
@@ -327,18 +361,11 @@ namespace zypp
         ProductInfoIterator()
         {}
 
-        /**
-         * Product label
-         */
+        /** Product label */
         std::string label() const;
 
-        /**
-         * The Common Platform Enumeration name
-         * for this product.
-         *
-         * See http://cpe.mitre.org
-         */
-        std::string cpeId() const;
+        /** The Common Platform Enumeration name for this product. */
+        CpeId cpeId() const;
 
       private:
         friend class Repository;

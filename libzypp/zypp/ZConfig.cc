@@ -11,7 +11,11 @@
 */
 extern "C"
 {
+#include <features.h>
 #include <sys/utsname.h>
+#if __GLIBC_PREREQ (2,16)
+#include <sys/auxv.h>	// getauxval for PPC64P7 detection
+#endif
 #include <unistd.h>
 #include <solv/solvversion.h>
 }
@@ -127,7 +131,7 @@ namespace zypp
           ERR << "Cant open " << PathInfo("/proc/cpuinfo") << endl;
         }
       }
-      else if ( architecture == Arch_armv7l)
+      else if ( architecture == Arch_armv7l || architecture == Arch_armv6l )
       {
 	std::ifstream platform( "/etc/rpm/platform" );
 	if (platform)
@@ -140,16 +144,24 @@ namespace zypp
 	      WAR << "/etc/rpm/platform contains armv7hl-: architecture upgraded to '" << architecture << "'" << endl;
 	      break;
 	    }
-	    if ( str::hasPrefix( *in, "armv7tnhl-" ) )
+	    if ( str::hasPrefix( *in, "armv6hl-" ) )
 	    {
-	      architecture = Arch_armv7tnhl;
-	      WAR << "/etc/rpm/platform contains armv7tnhl-: architecture upgraded to '" << architecture << "'" << endl;
+	      architecture = Arch_armv6hl;
+	      WAR << "/etc/rpm/platform contains armv6hl-: architecture upgraded to '" << architecture << "'" << endl;
 	      break;
 	    }
-
 	  }
 	}
       }
+#if __GLIBC_PREREQ (2,16)
+      else if ( architecture == Arch_ppc64 )
+      {
+	const char * platform = (const char *)getauxval( AT_PLATFORM );
+	int powerlvl;
+	if ( platform && sscanf( platform, "power%d", &powerlvl ) == 1 && powerlvl > 6 )
+	  architecture = Arch_ppc64p7;
+      }
+#endif
       return architecture;
     }
 
@@ -291,6 +303,7 @@ namespace zypp
         , download_min_download_speed	( 0 )
         , download_max_download_speed	( 0 )
         , download_max_silent_tries	( 5 )
+        , download_transfer_timeout	( 180 )
         , commit_downloadMode		( DownloadDefault )
         , solver_onlyRequires		( false )
         , solver_allowVendorChange	( false )
@@ -300,7 +313,7 @@ namespace zypp
         , apply_locks_file		( true )
         , pluginsPath			( "/usr/lib/zypp/plugins" )
       {
-        MIL << "libzypp: " << VERSION << " built in OBS, see rpm -q --info libzypp for more information" << endl;
+        MIL << "libzypp: " << VERSION << " built " << __DATE__ << " " <<  __TIME__ << endl;
         // override_r has higest prio
         // ZYPP_CONF might override /etc/zypp/zypp.conf
         if ( _parsedZyppConf.empty() )
@@ -417,6 +430,12 @@ namespace zypp
                 {
                   str::strtonum(value, download_max_silent_tries);
                 }
+                else if ( entry == "download.transfer_timeout" )
+                {
+                  str::strtonum(value, download_transfer_timeout);
+		  if ( download_transfer_timeout < 0 )		download_transfer_timeout = 0;
+		  else if ( download_transfer_timeout > 3600 )	download_transfer_timeout = 3600;
+                }
                 else if ( entry == "commit.downloadMode" )
                 {
                   commit_downloadMode.set( deserializeDownloadMode( value ) );
@@ -452,10 +471,6 @@ namespace zypp
                 else if ( entry == "solver.checkSystemFile" )
                 {
                   solver_checkSystemFile = Pathname(value);
-                }
-                else if ( entry == "solver.checkSystemFileDir" )
-                {
-                  solver_checkSystemFileDir = Pathname(value);
                 }
                 else if ( entry == "multiversion" )
                 {
@@ -566,6 +581,7 @@ namespace zypp
     int download_min_download_speed;
     int download_max_download_speed;
     int download_max_silent_tries;
+    int download_transfer_timeout;
 
     Option<DownloadMode> commit_downloadMode;
 
@@ -576,7 +592,6 @@ namespace zypp
     DefaultOption<bool> solverUpgradeRemoveDroppedPackages;
 
     Pathname solver_checkSystemFile;
-    Pathname solver_checkSystemFileDir;
 
     std::set<std::string> &		multiversion()		{ return getMultiversion(); }
     const std::set<std::string> &	multiversion() const	{ return getMultiversion(); }
@@ -588,6 +603,8 @@ namespace zypp
     Pathname history_log_path;
     Pathname credentials_global_dir_path;
     Pathname credentials_global_file_path;
+
+    std::string userData;
 
     Option<Pathname> pluginsPath;
 
@@ -717,6 +734,31 @@ namespace zypp
   }
 
   ///////////////////////////////////////////////////////////////////
+  // user data
+  ///////////////////////////////////////////////////////////////////
+
+  bool ZConfig::hasUserData() const
+  { return !_pimpl->userData.empty(); }
+
+  std::string ZConfig::userData() const
+  { return _pimpl->userData; }
+
+  bool ZConfig::setUserData( const std::string & str_r )
+  {
+    for_( ch, str_r.begin(), str_r.end() )
+    {
+      if ( *ch < ' ' && *ch != '\t' )
+      {
+	ERR << "New user data string rejectded: char " << (int)*ch << " at position " <<  (ch - str_r.begin()) << endl;
+	return false;
+      }
+    }
+    MIL << "Set user data string to '" << str_r << "'" << endl;
+    _pimpl->userData = str_r;
+    return true;
+  }
+
+  ///////////////////////////////////////////////////////////////////
 
   Pathname ZConfig::repoCachePath() const
   {
@@ -818,6 +860,9 @@ namespace zypp
   long ZConfig::download_max_silent_tries() const
   { return _pimpl->download_max_silent_tries; }
 
+  long ZConfig::download_transfer_timeout() const
+  { return _pimpl->download_transfer_timeout; }
+
   DownloadMode ZConfig::commit_downloadMode() const
   { return _pimpl->commit_downloadMode; }
 
@@ -834,10 +879,6 @@ namespace zypp
   { return ( _pimpl->solver_checkSystemFile.empty()
       ? (configPath()/"systemCheck") : _pimpl->solver_checkSystemFile ); }
 
-  Pathname ZConfig::solver_checkSystemFileDir() const
-  { return ( _pimpl->solver_checkSystemFileDir.empty()
-      ? (configPath()/"systemCheck.d") : _pimpl->solver_checkSystemFileDir ); }
-
   unsigned ZConfig::solver_upgradeTestcasesToKeep() const
   { return _pimpl->solver_upgradeTestcasesToKeep; }
 
@@ -846,6 +887,8 @@ namespace zypp
   void ZConfig::resetSolverUpgradeRemoveDroppedPackages()		{ _pimpl->solverUpgradeRemoveDroppedPackages.restoreToDefault(); }
 
   const std::set<std::string> & ZConfig::multiversionSpec() const	{ return _pimpl->multiversion(); }
+  void ZConfig::multiversionSpec( std::set<std::string> new_r )		{ _pimpl->multiversion().swap( new_r ); }
+  void ZConfig::clearMultiversionSpec()					{ _pimpl->multiversion().clear(); }
   void ZConfig::addMultiversionSpec( const std::string & name_r )	{ _pimpl->multiversion().insert( name_r ); }
   void ZConfig::removeMultiversionSpec( const std::string & name_r )	{ _pimpl->multiversion().erase( name_r ); }
 
@@ -917,7 +960,7 @@ namespace zypp
 
   std::ostream & ZConfig::about( std::ostream & str ) const
   {
-    str << "libzypp: " << VERSION << " built in OBS, see rpm -q --info libzypp for more information" << endl;
+    str << "libzypp: " << VERSION << " built " << __DATE__ << " " <<  __TIME__ << endl;
 
     str << "libsolv: " << solv_version;
     if ( ::strcmp( solv_version, LIBSOLV_VERSION_STRING ) )

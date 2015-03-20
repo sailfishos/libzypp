@@ -38,12 +38,20 @@ namespace zypp
     public:
       typedef unsigned long size_type;
 
+      /** Type to indicate the bitmap should match the current pools capacity. */
+      struct PoolSizeType {};
+      /** An object indicating the bitmap should match the current pools capacity. */
+      static constexpr PoolSizeType poolSize = PoolSizeType();
+
     public:
       /** Default ctor: empty Map */
       Map();
 
       /** Ctor taking the Map size */
       explicit Map( size_type size_r );
+
+      /** Ctor creating a Map matching the current pools capacity */
+      Map( PoolSizeType );
 
       /** Dtor */
       ~Map();
@@ -68,20 +76,30 @@ namespace zypp
       /** Assign \c val_r to all bits. */
       void assignAll( bool val_r );
 
-      /** Set bit \c idx_r. */
+      /** Set bit \c idx_r.
+       * \throws std::out_of_range if \a idx_r is out of range
+       */
       void set( size_type idx_r );
 
-      /** Clear bit \c idx_r. */
+      /** Clear bit \c idx_r.
+       * \throws std::out_of_range if \a idx_r is out of range
+       */
       void clear( size_type idx_r );
 
-      /** Assign \c val_r to bit \c idx_r. */
+      /** Assign \c val_r to bit \c idx_r.
+       * \throws std::out_of_range if \a idx_r is out of range
+       */
       void assign( size_type idx_r, bool val_r );
 
     public:
-      /** Test bit \c idx_r.*/
+      /** Test bit \c idx_r.
+       * \throws std::out_of_range if \a idx_r is out of range
+       */
       bool test( size_type idx_r ) const;
 
-      /** Test bit \c idx_r.*/
+      /** Test bit \c idx_r.
+       * \throws std::out_of_range if \a idx_r is out of range
+       */
       bool operator[]( size_type idx_r ) const
       { return test( idx_r ); }
 
@@ -113,6 +131,8 @@ namespace zypp
 
   /** \relates Map Clone function for RWCOW_pointer */
   template<> struct ::_Map * rwcowClone<struct ::_Map>( const struct ::_Map * rhs );
+
+  typedef sat::Map Bitmap;
 
 } // namespace zypp
 ///////////////////////////////////////////////////////////////////

@@ -8,6 +8,13 @@ ELSE ( DEFINED  LIB )
   SET ( LIB_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX}" )
 ENDIF ( DEFINED  LIB )
 MESSAGE(STATUS "Libraries will be installed in ${LIB_INSTALL_DIR}" )
+# Headers
+IF (DEFINED INCLUDE)
+  SET (INCLUDE_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/${INCLUDE}")
+else (DEFINED INCLUDE)
+  SET (INCLUDE_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/include")
+ENDIF (DEFINED  INCLUDE)
+MESSAGE (STATUS "Header files will be installed in ${INCLUDE_INSTALL_DIR}")
 
 # system configuration dir (etc)
 IF( NOT DEFINED SYSCONFDIR )
@@ -117,7 +124,7 @@ MACRO(GENERATE_PACKAGING PACKAGE VERSION)
   SPECFILE()
 
   ADD_CUSTOM_TARGET( svncheck
-    COMMAND cd $(CMAKE_SOURCE_DIR) && LC_ALL=C git status | grep -q "nothing to commit .working directory clean."
+    COMMAND cd ${CMAKE_SOURCE_DIR} && LC_ALL=C git status | grep -q "nothing to commit .working directory clean."
   )
 
   SET( AUTOBUILD_COMMAND

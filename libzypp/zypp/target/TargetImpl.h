@@ -27,8 +27,9 @@
 #include "zypp/target/rpm/RpmDb.h"
 #include "zypp/target/TargetException.h"
 #include "zypp/target/RequestedLocalesFile.h"
-#include "zypp/target/SoftLocksFile.h"
+#include "zypp/target/SolvIdentFile.h"
 #include "zypp/target/HardLocksFile.h"
+#include "zypp/ManagedFile.h"
 
 ///////////////////////////////////////////////////////////////////
 namespace zypp
@@ -106,7 +107,7 @@ namespace zypp
       void unload();
 
       void reload();
-      
+
       void clearCache();
 
       bool buildCache();
@@ -130,6 +131,9 @@ namespace zypp
 
       /** Install a source package on the Target. */
       void installSrcPackage( const SrcPackage_constPtr & srcPackage_r );
+
+      /** Provides a source package on the Target. */
+      ManagedFile provideSrcPackage( const SrcPackage_constPtr & srcPackage_r );
 
       /** Overload to realize stream output. */
       virtual std::ostream & dumpOn( std::ostream & str ) const
@@ -171,6 +175,11 @@ namespace zypp
       /** \overload */
       static std::string targetDistributionRelease( const Pathname & root_r );
 
+      /** \copydoc Target::targetDistributionFlavor()*/
+      std::string targetDistributionFlavor() const;
+      /** \overload */
+      static std::string targetDistributionFlavor( const Pathname & root_r );
+
       /** \copydoc Target::distributionVersion()*/
       Target::DistributionLabel distributionLabel() const;
       /** \overload */
@@ -197,6 +206,8 @@ namespace zypp
 		   CommitPackageCache & packageCache_r,
 		   ZYppCommitResult & result_r );
 
+      /** Commit helper checking for file conflicts after download. */
+      void commitFindFileConflicts( const ZYppCommitPolicy & policy_r, ZYppCommitResult & result_r );
     protected:
       /** Path to the target */
       Pathname _root;
@@ -204,8 +215,8 @@ namespace zypp
       rpm::RpmDb _rpm;
       /** Requested Locales database */
       RequestedLocalesFile _requestedLocalesFile;
-      /** Soft-locks database */
-      SoftLocksFile _softLocksFile;
+      /** user/auto installed database */
+      SolvIdentFile _autoInstalledFile;
       /** Hard-Locks database */
       HardLocksFile _hardLocksFile;
       /** Cache distributionVersion */

@@ -15,11 +15,13 @@ extern "C"
 }
 #include <iostream>
 #include <fstream>
+#include <signal.h>
 
 #include "zypp/base/Logger.h"
 #include "zypp/base/Gettext.h"
 #include "zypp/base/IOStream.h"
 #include "zypp/base/Functional.h"
+#include "zypp/base/Backtrace.h"
 #include "zypp/PathInfo.h"
 
 #include "zypp/ZYppFactory.h"
@@ -40,6 +42,19 @@ using std::endl;
 namespace zypp
 { /////////////////////////////////////////////////////////////////
 
+  namespace
+  {
+    void sigsegvHandler( int sig );
+    ::sighandler_t lastSigsegvHandler = ::signal( SIGSEGV, sigsegvHandler );
+
+    /** SIGSEGV handler to log stack trace */
+    void sigsegvHandler( int sig )
+    {
+      INT << "Error: signal " << sig << endl << dumpBacktrace << endl;
+      ::signal( SIGSEGV, lastSigsegvHandler );
+    }
+  }
+
   namespace env
   {
     /** Hack to circumvent the currently poor --root support. */
@@ -51,12 +66,17 @@ namespace zypp
   namespace zypp_readonly_hack
   { /////////////////////////////////////////////////////////////////
 
-    static bool active = false;
+    static bool active = getenv("ZYPP_READONLY_HACK");
 
     void IWantIt()
     {
       active = true;
       MIL << "ZYPP_READONLY promised." <<  endl;
+    }
+
+    bool IGotIt()
+    {
+      return active;
     }
 
     /////////////////////////////////////////////////////////////////
@@ -72,10 +92,10 @@ namespace zypp
   {
   public:
     ZYppGlobalLock()
-    : _cleanLock( false )
-    , _zyppLockFilePath( env::ZYPP_LOCKFILE_ROOT() / "/var/run/zypp.pid" )
+    : _zyppLockFilePath( env::ZYPP_LOCKFILE_ROOT() / "/var/run/zypp.pid" )
     , _zyppLockFile( NULL )
     , _lockerPid( 0 )
+    , _cleanLock( false )
     {
       filesystem::assert_dir(_zyppLockFilePath.dirname() );
     }

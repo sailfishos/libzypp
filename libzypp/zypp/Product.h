@@ -81,7 +81,7 @@ namespace zypp
     std::string productLine() const;
 
   public:
-    /** Untranslated short name like <tt>SLES 10</tt>*/
+    /** Untranslated short name like <tt>SLES 10</tt> (fallback: name) */
     std::string shortName() const;
 
     /** The product flavor (LiveCD Demo, FTP edition,...). */
@@ -91,13 +91,30 @@ namespace zypp
      * Well, in an ideal world there is only one base product.
      * It's the installed product denoted by a symlink in
      * \c /etc/products.d.
-     * \deprecated Use isTargetDistribution to test for the installed base product,
-     * other wise type is empty for almost all products.
-    */
-    std::string type() const ZYPP_DEPRECATED;
+     */
+    std::string type() const;
 
     /** The product flags */
     std::list<std::string> flags() const;
+
+    /** The date when this Product goes out of support as indicated by it's medadata. */
+    Date endOfLife() const;
+
+    /** ContentIdentifier of required update repositories. */
+    std::vector<Repository::ContentIdentifier> updateContentIdentifier() const;
+
+    /** Whether \a cident_r is listed as required update repository. */
+    bool hasUpdateContentIdentifier( const Repository::ContentIdentifier & cident_r ) const;
+
+    /** Whether one of the ContentIdentifier is listed as required update repository. */
+    template <class _Iterator>
+    bool hasUpdateContentIdentifier( _Iterator begin, _Iterator end ) const
+    {
+      for_( it, begin, end )
+	if ( hasUpdateContentIdentifier( *it ) )
+	  return true;
+      return false;
+    }
 
   public:
     /** This is the \b installed product that is also targeted by the
@@ -105,8 +122,8 @@ namespace zypp
     */
     bool isTargetDistribution() const;
 
-    /** This is \c register.target attribute of an \b installed product.
-      * Used for registration.
+    /** This is \c register.target attribute of a product.
+      * Used for registration and filtering service repos.
       */
     std::string registerTarget() const;
 
@@ -114,6 +131,11 @@ namespace zypp
       * Used for registration.
       */
     std::string registerRelease() const;
+
+    /** This is \c register.flavor attribute of a product.
+      * Used for registration.
+      */
+    std::string registerFlavor() const;
 
   public:
     /***/

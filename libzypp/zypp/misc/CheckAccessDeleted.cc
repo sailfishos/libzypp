@@ -13,6 +13,7 @@
 #include <unordered_set>
 #include "zypp/base/LogTools.h"
 #include "zypp/base/String.h"
+#include "zypp/base/Gettext.h"
 #include "zypp/base/Exception.h"
 
 #include "zypp/PathInfo.h"
@@ -45,8 +46,8 @@ namespace zypp
     typedef std::pair<std::string,std::unordered_set<std::string>> CacheEntry;
 
     /** Add \c cache to \c data if the process is accessing deleted files.
-     * \c pid string in \c cache is the proc line \c (pcuLR), \c iles
-     * are lready in place. Always clear the \c cache.files!
+     * \c pid string in \c cache is the proc line \c (pcuLR), \c files
+     * are already in place. Always clear the \c cache.files!
     */
     inline void addDataIf( std::vector<CheckAccessDeleted::ProcInfo> & data_r, const CacheEntry & cache_r )
     {
@@ -167,6 +168,33 @@ namespace zypp
       // Add if no duplicate
       cache_r.second.insert( n );
     }
+
+    /////////////////////////////////////////////////////////////////
+    /// \class FilterRunsInLXC
+    /// \brief Functor guessing whether \a PID is running in a container.
+    ///
+    /// Asumme a using different \c pid/mnt namespace than \c self.
+    /////////////////////////////////////////////////////////////////
+    struct FilterRunsInLXC
+    {
+      bool operator()( pid_t pid_r ) const
+      { return( nsIno( pid_r, "pid" ) != pidNS || nsIno( pid_r, "mnt" ) != mntNS ); }
+
+      FilterRunsInLXC()
+      : pidNS( nsIno( "self", "pid" ) )
+      , mntNS( nsIno( "self", "mnt" ) )
+      {}
+
+      static inline ino_t nsIno( const std::string & pid_r, const std::string & ns_r )
+      { return PathInfo("/proc/"+pid_r+"/ns/"+ns_r).ino(); }
+
+      static inline ino_t nsIno( pid_t pid_r, const std::string & ns_r )
+      { return  nsIno( asString(pid_r), ns_r ); }
+
+      ino_t pidNS;
+      ino_t mntNS;
+    };
+
     /////////////////////////////////////////////////////////////////
   } // namespace
   ///////////////////////////////////////////////////////////////////
@@ -182,17 +210,22 @@ namespace zypp
     ExternalProgram prog( argv, ExternalProgram::Discard_Stderr );
 
     // cachemap: PID => (deleted files)
+    // NOTE: omit PIDs running in a (lxc/docker) container
     std::map<pid_t,CacheEntry> cachemap;
-    pid_t cachepid;
+    pid_t cachepid = 0;
+    FilterRunsInLXC runsInLXC;
     for( std::string line = prog.receiveLine(); ! line.empty(); line = prog.receiveLine() )
     {
       // NOTE: line contains '\0' separeated fields!
       if ( line[0] == 'p' )
       {
 	str::strtonum( line.c_str()+1, cachepid );	// line is "p<PID>\0...."
-	cachemap[cachepid].first.swap( line );
+	if ( !runsInLXC( cachepid ) )
+	  cachemap[cachepid].first.swap( line );
+	else
+	  cachepid = 0;	// ignore this pid
       }
-      else
+      else if ( cachepid )
       {
 	addCacheIf( cachemap[cachepid], line, verbose_r );
       }
@@ -201,6 +234,10 @@ namespace zypp
     int ret = prog.close();
     if ( ret != 0 )
     {
+      if ( ret == 129 )
+      {
+	ZYPP_THROW( Exception(_("Please install package 'lsof' first.") ) );
+      }
       Exception err( str::form("Executing 'lsof' failed (%d).", ret) );
       err.remember( prog.execError() );
       ZYPP_THROW( err );

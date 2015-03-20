@@ -57,6 +57,25 @@ extern "C"
 /////////////////////////////////////////////////////////////////////////
 namespace zypp
 { ///////////////////////////////////////////////////////////////////////
+
+  /////////////////////////////////////////////////////////////////////////
+  namespace env
+  {
+    inline bool HACKENV( const char * var_r, bool default_r )
+    {
+      bool ret = default_r;
+      const char * val = ::getenv( var_r );
+      if ( val )
+      {
+	ret = str::strToBool( val, default_r );
+	if ( ret != default_r )
+	  INT << "HACKENV " << var_r << " = " << ret << endl;
+      }
+      return ret;
+    }
+  } // namespace env
+  /////////////////////////////////////////////////////////////////////////
+
   ///////////////////////////////////////////////////////////////////////
   namespace solver
   { /////////////////////////////////////////////////////////////////////
@@ -112,20 +131,34 @@ SATResolver::dumpOn( std::ostream & os ) const
 {
     os << "<resolver>" << endl;
     if (_solv) {
-	// os << "  fixsystem = " << _solv->fixsystem << endl;
-	// os << "  updatesystem = " << _solv->updatesystem << endl;
-	os << "  allowdowngrade = " << solver_get_flag(_solv, SOLVER_FLAG_ALLOW_DOWNGRADE) << endl;
-	os << "  allowarchchange = " << solver_get_flag(_solv, SOLVER_FLAG_ALLOW_ARCHCHANGE) << endl;
-	os << "  allowvendorchange = " <<  solver_get_flag(_solv, SOLVER_FLAG_ALLOW_VENDORCHANGE) << endl;
-	os << "  allowuninstall = " << solver_get_flag(_solv, SOLVER_FLAG_ALLOW_UNINSTALL) << endl;
-	os << "  noupdateprovide = " << solver_get_flag(_solv, SOLVER_FLAG_NO_UPDATEPROVIDE) << endl;
-	os << "  dosplitprovides = " << solver_get_flag(_solv, SOLVER_FLAG_SPLITPROVIDES) << endl;
-	os << "  onlyRequires = " << solver_get_flag(_solv, SOLVER_FLAG_IGNORE_RECOMMENDED) << endl;
-	os << "  ignorealreadyrecommended = " << !solver_get_flag(_solv, SOLVER_FLAG_ADD_ALREADY_RECOMMENDED) << endl;
-	os << "  distupgrade = " << _distupgrade << endl;
-        os << "  distupgrade_removeunsupported = " << _distupgrade_removeunsupported << endl;
-	os << "  solveSrcPackages = " << _solveSrcPackages << endl;
-	os << "  cleandepsOnRemove = " << _cleandepsOnRemove << endl;
+#define OUTS(X) os << "  " << #X << "\t= " << solver_get_flag(_solv, SOLVER_FLAG_##X) << endl
+	OUTS( ALLOW_DOWNGRADE );
+	OUTS( ALLOW_ARCHCHANGE );
+	OUTS( ALLOW_VENDORCHANGE );
+	OUTS( ALLOW_UNINSTALL );
+	OUTS( NO_UPDATEPROVIDE );
+	OUTS( SPLITPROVIDES );
+	OUTS( IGNORE_RECOMMENDED );
+	OUTS( ADD_ALREADY_RECOMMENDED );
+	OUTS( NO_INFARCHCHECK );
+	OUTS( ALLOW_NAMECHANGE );
+	OUTS( KEEP_EXPLICIT_OBSOLETES );
+	OUTS( BEST_OBEY_POLICY );
+	OUTS( NO_AUTOTARGET );
+	OUTS( DUP_ALLOW_DOWNGRADE );
+	OUTS( DUP_ALLOW_ARCHCHANGE );
+	OUTS( DUP_ALLOW_VENDORCHANGE );
+	OUTS( DUP_ALLOW_NAMECHANGE );
+	OUTS( KEEP_ORPHANS );
+	OUTS( BREAK_ORPHANS );
+	OUTS( FOCUS_INSTALLED );
+	OUTS( YUM_OBSOLETES );
+#undef OUTS
+	os << "  distupgrade	= "	<< _distupgrade << endl;
+        os << "  distupgrade_removeunsupported	= " << _distupgrade_removeunsupported << endl;
+	os << "  solveSrcPackages	= "	<< _solveSrcPackages << endl;
+	os << "  cleandepsOnRemove	= "	<< _cleandepsOnRemove << endl;
+        os << "  fixsystem		= "	<< _fixsystem << endl;
     } else {
 	os << "<NULL>";
     }
@@ -147,7 +180,7 @@ SATResolver::SATResolver (const ResPool & pool, Pool *SATPool)
     , _noupdateprovide(false)
     , _dosplitprovides(false)
     , _onlyRequires(ZConfig::instance().solver_onlyRequires())
-    , _ignorealreadyrecommended(false)
+    , _ignorealreadyrecommended(true)
     , _distupgrade(false)
     , _distupgrade_removeunsupported(false)
     , _solveSrcPackages(false)
@@ -422,7 +455,7 @@ SATResolver::solving(const CapabilitySet & requires_caps,
 		     const CapabilitySet & conflict_caps)
 {
     _solv = solver_create( _SATPool );
-    _solv->vendorCheckCb = &vendorCheck;
+    ::pool_set_custom_vendorcheck( _SATPool, &vendorCheck );
     if (_fixsystem) {
 	queue_push( &(_jobQueue), SOLVER_VERIFY|SOLVER_SOLVABLE_ALL);
 	queue_push( &(_jobQueue), 0 );
@@ -447,6 +480,13 @@ SATResolver::solving(const CapabilitySet & requires_caps,
     solver_set_flag(_solv, SOLVER_FLAG_SPLITPROVIDES, _dosplitprovides);
     solver_set_flag(_solv, SOLVER_FLAG_NO_UPDATEPROVIDE, _noupdateprovide);
     solver_set_flag(_solv, SOLVER_FLAG_IGNORE_RECOMMENDED, _onlyRequires);
+
+#define HACKENV(X,D) solver_set_flag(_solv, X, env::HACKENV( #X, D ) );
+    HACKENV( SOLVER_FLAG_DUP_ALLOW_DOWNGRADE,	true );
+    HACKENV( SOLVER_FLAG_DUP_ALLOW_ARCHCHANGE,	true );
+    HACKENV( SOLVER_FLAG_DUP_ALLOW_VENDORCHANGE,true );
+    HACKENV( SOLVER_FLAG_DUP_ALLOW_NAMECHANGE,	true );
+#undef HACKENV
 
     sat::Pool::instance().prepareForSolving();
 
@@ -663,15 +703,7 @@ SATResolver::solverInit(const PoolItemList & weakItems)
       queue_push( &(_jobQueue), it->id() );
     }
 
-    if ( cleandepsOnRemove() )
-    {
-      // Add all items known to be installed by user request (not solver selected).
-      for_( it, sat::Pool::instance().onSystemByUserBegin(), sat::Pool::instance().onSystemByUserEnd() )
-      {
-	queue_push( &(_jobQueue), SOLVER_USERINSTALLED | SOLVER_SOLVABLE_NAME );
-	queue_push( &(_jobQueue), it->id() );
-      }
-    }
+    ::pool_add_userinstalled_jobs(_SATPool, sat::Pool::instance().autoInstalled(), &(_jobQueue), GET_USERINSTALLED_NAMES|GET_USERINSTALLED_INVERTED);
 
     if ( _distupgrade )
     {
@@ -686,8 +718,8 @@ SATResolver::solverInit(const PoolItemList & weakItems)
           if ( (*it)->onSystem() ) // (to install) or (not to delete)
           {
             Product::constPtr prodCand( (*it)->candidateAsKind<Product>() );
-            if ( ! prodCand || (*it)->identicalInstalledCandidate() )
-              continue; // product no longer available or unchanged
+            if ( ! prodCand )
+              continue; // product no longer available
 
             CapabilitySet droplist( prodCand->droplist() );
             dumpRangeLine( MIL << "Droplist for " << (*it)->candidateObj() << ": " << droplist.size() << " ", droplist.begin(), droplist.end() ) << endl;
@@ -845,7 +877,7 @@ void SATResolver::doUpdate()
     setLocks();
 
     _solv = solver_create( _SATPool );
-    _solv->vendorCheckCb = &vendorCheck;
+    ::pool_set_custom_vendorcheck( _SATPool, &vendorCheck );
     if (_fixsystem) {
 	queue_push( &(_jobQueue), SOLVER_VERIFY|SOLVER_SOLVABLE_ALL);
 	queue_push( &(_jobQueue), 0 );
@@ -997,6 +1029,9 @@ string SATResolver::SATprobleminfoString(Id problem, string &detail, Id &ignoreI
   sat::Solvable s, s2;
 
   ignoreId = 0;
+
+  // FIXME: solver_findallproblemrules to get all rules for this problem
+  // (the 'most relevabt' one returned by solver_findproblemrule is embedded
   probr = solver_findproblemrule(_solv, problem);
   switch (solver_ruleinfo(_solv, probr, &source, &target, &dep))
   {
@@ -1021,6 +1056,16 @@ string SATResolver::SATprobleminfoString(Id problem, string &detail, Id &ignoreI
       case SOLVER_RULE_JOB_NOTHING_PROVIDES_DEP:
 	  ret = str::form (_("nothing provides requested %s"), pool_dep2str(pool, dep));
 	  detail += _("Have you enabled all requested repositories?");
+	  break;
+      case SOLVER_RULE_JOB_UNKNOWN_PACKAGE:
+	  ret = str::form (_("package %s does not exist"), pool_dep2str(pool, dep));
+	  detail += _("Have you enabled all requested repositories?");
+	  break;
+      case SOLVER_RULE_JOB_UNSUPPORTED:
+	  ret = _("unsupported request");
+	  break;
+      case SOLVER_RULE_JOB_PROVIDED_BY_SYSTEM:
+	  ret = str::form (_("%s is provided by the system and cannot be erased"), pool_dep2str(pool, dep));
 	  break;
       case SOLVER_RULE_RPM_NOT_INSTALLABLE:
 	  s = mapSolvable (source);
@@ -1156,7 +1201,7 @@ SATResolver::problems ()
 				if (poolItem) {
 				    if (pool->installed && s.get()->repo == pool->installed) {
 					problemSolution->addSingleAction (poolItem, REMOVE);
-					string description = str::form (_("do not keep %s installed"),  s.asString().c_str() );
+					string description = str::form (_("remove lock to allow removal of %s"),  s.asString().c_str() );
 					MIL << description << endl;
 					problemSolution->addDescription (description);
 				    } else {
@@ -1181,7 +1226,7 @@ SATResolver::problems ()
 					problemSolution->addDescription (description);
 				    } else {
 					problemSolution->addSingleAction (poolItem, UNLOCK);
-					string description = str::form (_("do not forbid installation of %s"), itemToString( poolItem ).c_str());
+					string description = str::form (_("remove lock to allow installation of %s"), itemToString( poolItem ).c_str());
 					MIL << description << endl;
 					problemSolution->addDescription (description);
 				    }
@@ -1479,6 +1524,22 @@ void SATResolver::setSystemRequirements()
         }
       }
     }
+}
+
+sat::StringQueue SATResolver::autoInstalled() const
+{
+  sat::StringQueue ret;
+  if ( _solv )
+    ::solver_get_userinstalled( _solv, ret, GET_USERINSTALLED_NAMES|GET_USERINSTALLED_INVERTED );
+  return ret;
+}
+
+sat::StringQueue SATResolver::userInstalled() const
+{
+  sat::StringQueue ret;
+  if ( _solv )
+    ::solver_get_userinstalled( _solv, ret, GET_USERINSTALLED_NAMES );
+  return ret;
 }
 
 

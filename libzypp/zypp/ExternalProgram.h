@@ -85,7 +85,7 @@ namespace zypp {
        * @param commandline a shell commandline that is appended to
        * <tt>/bin/sh -c</tt>.
        * @param default_locale whether to set LC_ALL=C before starting
-       * @param root directory to chroot into, / or empty to not chroot
+       * @param root directory to chroot into; or just 'cd' if '/'l;  nothing if empty
        */
       ExternalProgram (std::string commandline,
     		     Stderr_Disposition stderr_disp = Normal_Stderr,
@@ -97,6 +97,9 @@ namespace zypp {
        * If environment is provided, varaiables will be added to the childs environment,
        * overwriting existing ones.
        *
+       * Initial args starting with \c # are discarded but some are treated specially:
+       * 	#/[path] - chdir to /[path] before executing
+       *
        * Stdin redirection: If the \b 1st argument starts with a \b '<', the remaining
        * part is treated as file opened for reading on standard input (or \c /dev/null
        * if empty).
@@ -105,6 +108,10 @@ namespace zypp {
        *   const char* argv[] = { "</tmp/x", "cat", NULL };
        *   ExternalProgram prog( argv );
        * \endcode
+       *
+       * Stdout redirection: If the \b 1st argument starts with a \b '>', the remaining
+       * part is treated as file opened for writing on standard output (or \c /dev/null
+       * if empty).
        */
 
       ExternalProgram();
