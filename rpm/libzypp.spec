@@ -7,6 +7,7 @@ Release:        1
 Source:         %{name}-%{version}.tar.bz2
 Source1:        %{name}-rpmlintrc
 Patch0:         0001-zypp-PublicKey.cc-Use-GPG_BINARY-from-KeyRing.cc.patch
+Patch1:         0002-Revert-Collect-and-execute-posttrans-scripts-delayed.patch
 BuildRequires:  cmake
 BuildRequires:  openssl-devel
 BuildRequires:  libudev-devel
@@ -76,6 +77,7 @@ Authors:
 %prep
 %setup -q -n %{name}-%{version}/%{name}
 %patch0 -p1
+%patch1 -p1
 
 %build
 mkdir -p build
