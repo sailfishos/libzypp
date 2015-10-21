@@ -398,6 +398,8 @@ namespace zypp
 
       // build the package and put it into the cache
       Pathname destination( _package->repoInfo().packagesPath() / _package->location().filename() );
+      // ensure that the destination directory exists
+      filesystem::assert_dir( destination.dirname() );
 
       if ( ! applydeltarpm::provide( delta, destination,
                                      bind( &RpmPackageProvider::progressDeltaApply, this, _1 ) ) )
