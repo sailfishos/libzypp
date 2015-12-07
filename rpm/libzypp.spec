@@ -1,5 +1,5 @@
 Name:           libzypp
-License:        GPL v2 or later
+License:        GPLv2+
 Group:          System/Packages
 Summary:        Package, Patch, Pattern, and Product Management
 Version:        14.35.0
@@ -42,7 +42,6 @@ Authors:
     Ladislav Slezak <lslezak@suse.cz>
 
 %package devel
-License:        GPL v2 or later
 Requires:       libzypp = %{version}
 Requires:       libxml2-devel
 Requires:       openssl-devel
@@ -58,7 +57,6 @@ Requires:       cmake
 Requires:       curl-devel
 Requires:       libsolv-devel
 Summary:        Package, Patch, Pattern, and Product Management - developers files
-Group:          System/Packages
 
 %description -n libzypp-devel
 Package, Patch, Pattern, and Product Management - developers files
