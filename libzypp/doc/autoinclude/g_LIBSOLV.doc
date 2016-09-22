@@ -1,7 +1,0 @@
-/** \namespace zypp::sat \ref LIBSOLV
-*/
-/** \defgroup LIBSOLV Libsolv interface
-
-Interface to sat-pool and sat-solver.
-
-*/
