@@ -2,16 +2,17 @@ Name:           libzypp
 License:        GPLv2+
 Group:          System/Packages
 Summary:        Package, Patch, Pattern, and Product Management
-Version:        14.35.0
+Version:        16.2.2
 Release:        1
 Source:         %{name}-%{version}.tar.bz2
 Source1:        %{name}-rpmlintrc
 Patch0:         0001-zypp-PublicKey.cc-Use-GPG_BINARY-from-KeyRing.cc.patch
-Patch1:         0002-Revert-Collect-and-execute-posttrans-scripts-delayed.patch
+Patch1:         0002-Diffs-14.35.0-10.patch
 BuildRequires:  cmake
 BuildRequires:  openssl-devel
 BuildRequires:  libudev-devel
-BuildRequires:  boost-devel >= 1.49.0
+# Need boost > 1.53 for string_ref utility
+BuildRequires:  boost-devel >= 1.53.0 
 BuildRequires:  doxygen
 BuildRequires:  gcc-c++ >= 4.6
 BuildRequires:  gettext-devel
@@ -51,7 +52,7 @@ Requires:       glibc-devel
 Requires:       zlib-devel
 Requires:       bzip2
 Requires:       popt-devel
-Requires:       boost-devel >= 1.49.0
+Requires:       boost-devel >= 1.60.0
 Requires:       libstdc++-devel
 Requires:       libudev-devel
 Requires:       cmake
@@ -74,7 +75,7 @@ Authors:
     Ladislav Slezak <lslezak@suse.cz>
 
 %prep
-%setup -q -n %{name}-%{version}/%{name}
+%setup -q -n %{name}-%{version}/upstream
 %patch0 -p1
 %patch1 -p1
 

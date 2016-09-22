@@ -6,14 +6,19 @@ Subject: [PATCH] zypp/PublicKey.cc: Use GPG_BINARY from KeyRing.cc
 On systems where "gpg" is not available, checking the public key
 would fail. Use GPG_BINARY in both PublicKey.cc and KeyRing.cc,
 and define it in a single place only (ExternalProgram.h).
+
+The original patch was partially integrated in upstream 
+commit 092cded378742fcbb0761cc470da863cb32ed537, but only as a duplicated
+define in KeyRing and PublicKey. This patch now just moves the define to 
+ExternalProgram.h
 ---
  zypp/ExternalProgram.h | 2 ++
- zypp/KeyRing.cc        | 2 --
- zypp/PublicKey.cc      | 2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ zypp/KeyRing.cc        | 3 ---
+ zypp/PublicKey.cc      | 3 ---
+ 3 files changed, 2 insertions(+), 6 deletions(-)
 
 diff --git a/zypp/ExternalProgram.h b/zypp/ExternalProgram.h
-index bc62a4c..46e8145 100644
+index f3fc850..99a3143 100644
 --- a/zypp/ExternalProgram.h
 +++ b/zypp/ExternalProgram.h
 @@ -22,6 +22,8 @@
@@ -26,31 +31,34 @@ index bc62a4c..46e8145 100644
  
      /**
 diff --git a/zypp/KeyRing.cc b/zypp/KeyRing.cc
-index 13cae3d..a4dc447 100644
+index d6b8246..826ce4c 100644
 --- a/zypp/KeyRing.cc
 +++ b/zypp/KeyRing.cc
-@@ -37,8 +37,6 @@ using std::endl;
+@@ -35,9 +35,6 @@ using std::endl;
  #undef  ZYPP_BASE_LOGGER_LOGGROUP
  #define ZYPP_BASE_LOGGER_LOGGROUP "zypp::KeyRing"
  
+-/** \todo Fix duplicate define in PublicKey/KeyRing */
 -#define GPG_BINARY "/usr/bin/gpg2"
 -
  ///////////////////////////////////////////////////////////////////
  namespace zypp
  { /////////////////////////////////////////////////////////////////
 diff --git a/zypp/PublicKey.cc b/zypp/PublicKey.cc
-index 4d3d773..52d9d7a 100644
+index fa17b79..fdbc95e 100644
 --- a/zypp/PublicKey.cc
 +++ b/zypp/PublicKey.cc
-@@ -349,7 +349,7 @@ namespace zypp
-         static filesystem::TmpDir dir;
-         const char* argv[] =
-         {
--          "gpg",
-+          GPG_BINARY,
-           "-v",
-           "--no-default-keyring",
-           "--fixed-list-mode",
+@@ -28,9 +28,6 @@
+ 
+ #include <ctime>
+ 
+-/** \todo Fix duplicate define in PublicKey/KeyRing */
+-#define GPG_BINARY "/usr/bin/gpg2"
+-
+ using std::endl;
+ 
+ ///////////////////////////////////////////////////////////////////
 -- 
-2.1.4
+1.8.3-rc3
+
 
