@@ -1,0 +1,23 @@
+From 5b889d27aee80bf69a48e135ed525729d15c30d7 Thu, 28 Jun 2018 10:45:18 +0200
+From: Juha Kallioinen <juha.kallioinen@jolla.com>
+Date: Wed, 6 Nov 2013 14:07:52 +0000
+Subject: [PATCH] [libzypp] Set unrestricted auth curl option
+
+
+Signed-off-by: Juha Kallioinen <juha.kallioinen@jolla.com>
+
+diff --git a/zypp/media/MediaCurl.cc b/zypp/media/MediaCurl.cc
+index 115e06f..cefc299 100644
+--- a/zypp/media/MediaCurl.cc
++++ b/zypp/media/MediaCurl.cc
+@@ -724,6 +724,10 @@
+   // follow any Location: header that the server sends as part of
+   // an HTTP header (#113275)
+   SET_OPTION(CURLOPT_FOLLOWLOCATION, 1L);
++  // send user credentials to all hosts the site may redirect to.
++  // see "man curl" and acknowledge the potential security breach when
++  // using --location-trusted
++  SET_OPTION(CURLOPT_UNRESTRICTED_AUTH, 1L);
+   // 3 redirects seem to be too few in some cases (bnc #465532)
+   SET_OPTION(CURLOPT_MAXREDIRS, 6L);
+ 

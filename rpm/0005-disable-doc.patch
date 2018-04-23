@@ -1,0 +1,19 @@
+From f00ae6e324b5af266ba3bf714c0eb66c1795a9bd Mon, 23 Apr 2018 18:39:03 +0200
+From: Andrew Branson <andrew.branson@jollamobile.com>
+Date: Mon, 23 Apr 2018 18:38:51 +0200
+Subject: [PATCH] Disable doc generation
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 43c762c..fb2f031 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -251,7 +251,7 @@
+ # do not build devel by default
+ ADD_SUBDIRECTORY( devel EXCLUDE_FROM_ALL )
+ ADD_SUBDIRECTORY( tools )
+-ADD_SUBDIRECTORY( doc )
++#ADD_SUBDIRECTORY( doc )
+ ADD_SUBDIRECTORY( vendor )
+ 
+ IF ( ENABLE_BUILD_TRANS )
+

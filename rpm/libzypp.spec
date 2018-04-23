@@ -2,12 +2,15 @@ Name:           libzypp
 License:        GPLv2+
 Group:          System/Packages
 Summary:        Package, Patch, Pattern, and Product Management
-Version:        16.2.2
+Version:        17.3.1
 Release:        1
 Source:         %{name}-%{version}.tar.bz2
 Source1:        %{name}-rpmlintrc
-Patch0:         0001-zypp-PublicKey.cc-Use-GPG_BINARY-from-KeyRing.cc.patch
-Patch1:         0002-Diffs-14.35.0-10.patch
+Patch1:         0001-Set-downloadusedeltarpmalwaystrue.patch
+Patch2:         0002-Set-rpminstallexcludedocs--yes-Save-space-on.patch
+Patch3:         0003-Ensure-that-the-destination-path-for-applyi.patch
+Patch4:         0004-Set-unrestricted-auth-curl-option.patch
+Patch5:         0005-disable-doc.patch
 BuildRequires:  cmake
 BuildRequires:  openssl-devel
 BuildRequires:  libudev-devel
@@ -26,7 +29,8 @@ BuildRequires:  expat-devel
 BuildRequires:  glib2-devel
 BuildRequires:  popt-devel
 BuildRequires:  rpm-devel
-Requires:       gnupg2
+BuildRequires:  gpgme-devel
+Requires:       gpgme
 BuildRequires:  curl-devel
 
 %description
@@ -76,8 +80,11 @@ Authors:
 
 %prep
 %setup -q -n %{name}-%{version}/upstream
-%patch0 -p1
 %patch1 -p1
+%patch2 -p1
+%patch3 -p1
+%patch4 -p1
+%patch5 -p1
 
 %build
 mkdir -p build
@@ -88,14 +95,12 @@ export CFLAGS="$CFLAGS -gdwarf-2"
 export CXXFLAGS="$CXXFLAGS -gdwarf-2"
 
 cmake -DCMAKE_INSTALL_PREFIX=%{_prefix} \
-      -DDOC_INSTALL_DIR=%{_docdir} \
       -DLIB=%{_lib} \
       -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_SKIP_RPATH=1 \
       -DUSE_TRANSLATION_SET=${TRANSLATION_SET:-zypp} \
       ..
 make %{?_smp_mflags} VERBOSE=1
-make -C doc/autodoc %{?_smp_mflags}
 make -C po %{?_smp_mflags} translations
 
 %if 0%{?run_testsuite}
@@ -109,7 +114,6 @@ make -C po %{?_smp_mflags} translations
 rm -rf "$RPM_BUILD_ROOT"
 cd build
 make install DESTDIR=$RPM_BUILD_ROOT
-make -C doc/autodoc install DESTDIR=$RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/zypp/repos.d
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/zypp/services.d
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/zypp/vendors.d
@@ -218,8 +222,6 @@ fi
 %files devel
 %defattr(-,root,root,-)
 %{_libdir}/libzypp.so
-%{_docdir}/%{name}
 %{_includedir}/zypp
 %{_datadir}/cmake/Modules/*
 %{_libdir}/pkgconfig/libzypp.pc
-%doc %{_mandir}/man?/*.?.gz
