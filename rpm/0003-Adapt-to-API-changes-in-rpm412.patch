@@ -1,0 +1,34 @@
+From e6982194dd7e7d1521c52dec5508a22e188da257 Mon, 28 May 2018 15:08:37 +0200
+From: Michael Andres <ma@suse.de>
+Date: Mon, 22 Sep 2014 14:20:47 +0200
+Subject: [PATCH] Adapt to API changes in rpm.4.12
+
+
+diff --git a/zypp/target/rpm/librpm.h b/zypp/target/rpm/librpm.h
+index 2d7425d..17e801d 100644
+--- a/zypp/target/rpm/librpm.h
++++ b/zypp/target/rpm/librpm.h
+@@ -28,6 +28,7 @@
+ #include <rpm/rpmmacro.h>
+ #include <rpm/rpmdb.h>
+ #include <rpm/rpmts.h>
++#include <rpm/rpmfi.h>
+ #include <fcntl.h>
+ }
+ 
+diff --git a/zypp/target/rpm/librpmDb.cc b/zypp/target/rpm/librpmDb.cc
+index 3f472f4..cc419dd 100644
+--- a/zypp/target/rpm/librpmDb.cc
++++ b/zypp/target/rpm/librpmDb.cc
+@@ -679,7 +679,11 @@
+     if ( ! create( RPMDBI_PACKAGES ) )
+       return false;
+ #warning TESTCASE: rpmdbAppendIterator and (non)sequential access?
++#ifdef RPMFILEITERMAX	// since rpm.4.12
++    ::rpmdbAppendIterator( _mi, (const unsigned *)&off_r, 1 );
++#else
+     ::rpmdbAppendIterator( _mi, &off_r, 1 );
++#endif
+     return advance();
+   }
+ 

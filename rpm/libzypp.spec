@@ -6,6 +6,10 @@ Version:        12.2.0
 Release:        1
 Source:         %{name}-%{version}.tar.bz2
 Source1:        %{name}-rpmlintrc
+Patch1:         0001-Get-pre-posttrans-scripts-from-RpmHeader.patch
+Patch2:         0002-adapt-to-new-rpm-weak-dependency-tags.patch
+Patch3:         0003-Adapt-to-API-changes-in-rpm412.patch
+Patch4:         0004-Remove-dead-code-for-rpm44.patch
 BuildRequires:  cmake
 BuildRequires:  openssl-devel
 BuildRequires:  libudev-devel
@@ -73,6 +77,10 @@ Authors:
 
 %prep
 %setup -q -n %{name}-%{version}/%{name}
+%patch1 -p1
+%patch2 -p1
+%patch3 -p1
+%patch4 -p1
 
 %build
 mkdir -p build
