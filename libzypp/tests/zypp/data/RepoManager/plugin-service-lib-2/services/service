@@ -1,8 +1,0 @@
-#!/bin/sh
-echo "
-[repo3]
-name=Repository3
-baseurl=http://somehost.com/repo3
-type=rpmmd
-"
-

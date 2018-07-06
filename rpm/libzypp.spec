@@ -2,16 +2,20 @@ Name:           libzypp
 License:        GPLv2+
 Group:          System/Packages
 Summary:        Package, Patch, Pattern, and Product Management
-Version:        14.35.0
+Version:        17.3.1
 Release:        1
 Source:         %{name}-%{version}.tar.bz2
 Source1:        %{name}-rpmlintrc
-Patch0:         0001-zypp-PublicKey.cc-Use-GPG_BINARY-from-KeyRing.cc.patch
-Patch1:         0002-Revert-Collect-and-execute-posttrans-scripts-delayed.patch
+Patch1:         0001-Set-downloadusedeltarpmalwaystrue.patch
+Patch2:         0002-Set-rpminstallexcludedocs--yes-Save-space-on.patch
+Patch3:         0003-Ensure-that-the-destination-path-for-applyi.patch
+Patch4:         0004-Set-unrestricted-auth-curl-option.patch
+Patch5:         0005-disable-doc.patch
 BuildRequires:  cmake
 BuildRequires:  openssl-devel
 BuildRequires:  libudev-devel
-BuildRequires:  boost-devel >= 1.49.0
+# Need boost > 1.53 for string_ref utility
+BuildRequires:  boost-devel >= 1.53.0 
 BuildRequires:  doxygen
 BuildRequires:  gcc-c++ >= 4.6
 BuildRequires:  gettext-devel
@@ -25,7 +29,8 @@ BuildRequires:  expat-devel
 BuildRequires:  glib2-devel
 BuildRequires:  popt-devel
 BuildRequires:  rpm-devel
-Requires:       gnupg2
+BuildRequires:  gpgme-devel
+Requires:       gpgme
 BuildRequires:  curl-devel
 
 %description
@@ -51,7 +56,7 @@ Requires:       glibc-devel
 Requires:       zlib-devel
 Requires:       bzip2
 Requires:       popt-devel
-Requires:       boost-devel >= 1.49.0
+Requires:       boost-devel >= 1.60.0
 Requires:       libstdc++-devel
 Requires:       libudev-devel
 Requires:       cmake
@@ -74,9 +79,12 @@ Authors:
     Ladislav Slezak <lslezak@suse.cz>
 
 %prep
-%setup -q -n %{name}-%{version}/%{name}
-%patch0 -p1
+%setup -q -n %{name}-%{version}/upstream
 %patch1 -p1
+%patch2 -p1
+%patch3 -p1
+%patch4 -p1
+%patch5 -p1
 
 %build
 mkdir -p build
@@ -87,14 +95,12 @@ export CFLAGS="$CFLAGS -gdwarf-2"
 export CXXFLAGS="$CXXFLAGS -gdwarf-2"
 
 cmake -DCMAKE_INSTALL_PREFIX=%{_prefix} \
-      -DDOC_INSTALL_DIR=%{_docdir} \
       -DLIB=%{_lib} \
       -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_SKIP_RPATH=1 \
       -DUSE_TRANSLATION_SET=${TRANSLATION_SET:-zypp} \
       ..
 make %{?_smp_mflags} VERBOSE=1
-make -C doc/autodoc %{?_smp_mflags}
 make -C po %{?_smp_mflags} translations
 
 %if 0%{?run_testsuite}
@@ -108,7 +114,6 @@ make -C po %{?_smp_mflags} translations
 rm -rf "$RPM_BUILD_ROOT"
 cd build
 make install DESTDIR=$RPM_BUILD_ROOT
-make -C doc/autodoc install DESTDIR=$RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/zypp/repos.d
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/zypp/services.d
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/zypp/vendors.d
@@ -217,8 +222,6 @@ fi
 %files devel
 %defattr(-,root,root,-)
 %{_libdir}/libzypp.so
-%{_docdir}/%{name}
 %{_includedir}/zypp
 %{_datadir}/cmake/Modules/*
 %{_libdir}/pkgconfig/libzypp.pc
-%doc %{_mandir}/man?/*.?.gz
