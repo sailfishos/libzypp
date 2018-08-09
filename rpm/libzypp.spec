@@ -11,6 +11,7 @@ Patch2:         0002-Set-rpminstallexcludedocs--yes-Save-space-on.patch
 Patch3:         0003-Ensure-that-the-destination-path-for-applyi.patch
 Patch4:         0004-Set-unrestricted-auth-curl-option.patch
 Patch5:         0005-disable-doc.patch
+Patch6:         0006-libzypp-Enable-netrcoptional-on-libcurl-to-allow-for.patch
 BuildRequires:  cmake
 BuildRequires:  openssl-devel
 BuildRequires:  libudev-devel
@@ -85,6 +86,7 @@ Authors:
 %patch3 -p1
 %patch4 -p1
 %patch5 -p1
+%patch6 -p1
 
 %build
 mkdir -p build
