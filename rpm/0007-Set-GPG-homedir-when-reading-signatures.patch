@@ -1,0 +1,22 @@
+From 11d772131cf682b153071ec5a8b6986091c3ab75 Wed, 23 Jan 2019 09:07:33 +0100
+From: Andrew Branson <andrew.branson@jollamobile.com>
+Date: Wed, 23 Jan 2019 09:06:03 +0100
+Subject: [PATCH] Set GPG homedir when reading signatures. GPG won't start without a valid one.
+
+Not being able to create ~/.gnupg is a fatal error on startup for GPG
+
+diff --git a/zypp/KeyRing.cc b/zypp/KeyRing.cc
+index d9e0c9a..c39b872 100644
+--- a/zypp/KeyRing.cc
++++ b/zypp/KeyRing.cc
+@@ -564,6 +564,10 @@
+       return std::string();
+     }
+ 
++    if(!ctx->setHomedir(generalKeyRing())) {
++      ZYPP_THROW(KeyRingException(_("General keyring not found")));
++    }
++
+     std::list<std::string> fprs = ctx->readSignatureFingerprints(signature);
+     if (fprs.size()) {
+       std::string &id = fprs.back();
