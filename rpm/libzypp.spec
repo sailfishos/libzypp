@@ -12,6 +12,7 @@ Patch3:         0003-Ensure-that-the-destination-path-for-applyi.patch
 Patch4:         0004-Set-unrestricted-auth-curl-option.patch
 Patch5:         0005-disable-doc.patch
 Patch6:         0006-libzypp-Enable-netrcoptional-on-libcurl-to-allow-for.patch
+Patch7:         0007-Set-GPG-homedir-when-reading-signatures.patch
 BuildRequires:  cmake
 BuildRequires:  openssl-devel
 BuildRequires:  libudev-devel
@@ -87,6 +88,7 @@ Authors:
 %patch4 -p1
 %patch5 -p1
 %patch6 -p1
+%patch7 -p1
 
 %build
 mkdir -p build
