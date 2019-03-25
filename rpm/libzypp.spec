@@ -91,6 +91,8 @@ Authors:
 %patch7 -p1
 
 %build
+# Relocate all the dirs in /var/cache/zypp to /home/.zypp-cache
+sed -i -r 's/^#(.*)\/var\/cache\/zypp/\1\/home\/.zypp-cache/g' ./zypp.conf
 mkdir -p build
 cd build
 
