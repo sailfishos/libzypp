@@ -15,7 +15,6 @@ Patch6:         0006-libzypp-Enable-netrcoptional-on-libcurl-to-allow-for.patch
 Patch7:         0007-Set-GPG-homedir-when-reading-signatures.patch
 BuildRequires:  cmake
 BuildRequires:  openssl-devel
-BuildRequires:  libudev-devel
 # Need boost > 1.53 for string_ref utility
 BuildRequires:  boost-devel >= 1.53.0 
 BuildRequires:  doxygen
@@ -27,7 +26,6 @@ BuildRequires:  libsolv-devel >= 0.6.8
 Requires:       libsolv-tools >= 0.6.8
 Requires:       libsolv0 >= 0.6.8
 Requires:       lsof
-BuildRequires:  expat-devel
 BuildRequires:  glib2-devel
 BuildRequires:  popt-devel
 BuildRequires:  rpm-devel
@@ -60,7 +58,6 @@ Requires:       bzip2
 Requires:       popt-devel
 Requires:       boost-devel >= 1.60.0
 Requires:       libstdc++-devel
-Requires:       libudev-devel
 Requires:       cmake
 Requires:       curl-devel
 Requires:       libsolv-devel
