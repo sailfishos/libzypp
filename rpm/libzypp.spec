@@ -26,7 +26,6 @@ BuildRequires:  libsolv-devel >= 0.6.8
 Requires:       libsolv-tools >= 0.6.8
 Requires:       libsolv0 >= 0.6.8
 Requires:       lsof
-BuildRequires:  expat-devel
 BuildRequires:  glib2-devel
 BuildRequires:  popt-devel
 BuildRequires:  rpm-devel
