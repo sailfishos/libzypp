@@ -211,9 +211,9 @@ fi
 %dir               %{_sysconfdir}/zypp/vendors.d
 %dir               %{_sysconfdir}/zypp/multiversion.d
 %dir               %{_sysconfdir}/zypp/systemCheck.d
-%config(noreplace) %{_sysconfdir}/zypp/zypp.conf
-%config(noreplace) %{_sysconfdir}/zypp/systemCheck
-%config(noreplace) %{_sysconfdir}/logrotate.d/zypp-history.lr
+%config %{_sysconfdir}/zypp/zypp.conf
+%config %{_sysconfdir}/zypp/systemCheck
+%config %{_sysconfdir}/logrotate.d/zypp-history.lr
 %dir               %{_var}/lib/zypp
 %dir               %{_var}/log/zypp
 %dir               %{_var}/cache/zypp
