@@ -2,7 +2,7 @@ Name:           libzypp
 License:        GPLv2+
 Group:          System/Packages
 Summary:        Package, Patch, Pattern, and Product Management
-Version:        17.3.1
+Version:        17.9.0
 Release:        1
 Source:         %{name}-%{version}.tar.bz2
 Source1:        %{name}-rpmlintrc
@@ -16,7 +16,7 @@ Patch7:         0007-Set-GPG-homedir-when-reading-signatures.patch
 BuildRequires:  cmake
 BuildRequires:  openssl-devel
 # Need boost > 1.53 for string_ref utility
-BuildRequires:  boost-devel >= 1.53.0 
+BuildRequires:  boost-devel >= 1.53.0
 BuildRequires:  doxygen
 BuildRequires:  gcc-c++ >= 4.6
 BuildRequires:  gettext-devel
@@ -221,6 +221,7 @@ fi
 %{_datadir}/zypp
 %{_bindir}/*
 %{_libdir}/libzypp*so.*
+%exclude %{_sysconfdir}/zypp/needreboot
 
 %files devel
 %defattr(-,root,root,-)

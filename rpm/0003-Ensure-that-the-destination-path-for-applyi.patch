@@ -8,12 +8,12 @@ diff --git a/zypp/repo/PackageProvider.cc b/zypp/repo/PackageProvider.cc
 index 0557284..251160b 100644
 --- a/zypp/repo/PackageProvider.cc
 +++ b/zypp/repo/PackageProvider.cc
-@@ -552,6 +552,8 @@
- 
-       // build the package and put it into the cache
-       Pathname destination( _package->repoInfo().packagesPath() / _package->repoInfo().path() / _package->location().filename() );
+@@ -613,6 +613,8 @@ namespace zypp
+       // Build the package
+       Pathname cachedest( _package->repoInfo().packagesPath() / _package->repoInfo().path() / _package->location().filename() );
+       Pathname builddest( cachedest.extend( ".drpm" ) );
 +      // ensure that the destination directory exists
-+      filesystem::assert_dir( destination.dirname() );
- 
-       if ( ! applydeltarpm::provide( delta, destination,
++      filesystem::assert_dir( builddest.dirname() );
+
+       if ( ! applydeltarpm::provide( delta, builddest,
                                       bind( &RpmPackageProvider::progressDeltaApply, this, _1 ) ) )
