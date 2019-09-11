@@ -9,10 +9,10 @@ diff --git a/zypp/KeyRing.cc b/zypp/KeyRing.cc
 index d9e0c9a..c39b872 100644
 --- a/zypp/KeyRing.cc
 +++ b/zypp/KeyRing.cc
-@@ -564,6 +564,10 @@
+@@ -639,6 +639,10 @@ namespace zypp
        return std::string();
      }
- 
+
 +    if(!ctx->setHomedir(generalKeyRing())) {
 +      ZYPP_THROW(KeyRingException(_("General keyring not found")));
 +    }
