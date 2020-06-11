@@ -1,6 +1,5 @@
 Name:           libzypp
 License:        GPLv2+
-Group:          System/Packages
 Summary:        Package, Patch, Pattern, and Product Management
 Version:        17.9.0
 Release:        1
@@ -78,14 +77,11 @@ Authors:
     Ladislav Slezak <lslezak@suse.cz>
 
 %prep
-%setup -q -n %{name}-%{version}/upstream
-%patch1 -p1
-%patch2 -p1
-%patch3 -p1
-%patch4 -p1
-%patch5 -p1
-%patch6 -p1
-%patch7 -p1
+%autosetup -p1 -n %{name}-%{version}/upstream
+
+# Use correct library path
+find -type f -exec sed -i -e "s|/usr/lib/zypp|%{_libdir}/zypp|g" {} ';'
+find -type f -exec sed -i -e "s|\${CMAKE_INSTALL_PREFIX}/lib/zypp|\${CMAKE_INSTALL_PREFIX}/%{_lib}/zypp|g" {} ';'
 
 %build
 # Relocate all the dirs in /var/cache/zypp to /home/.zypp-cache
@@ -98,7 +94,6 @@ export CFLAGS="$CFLAGS -gdwarf-2"
 export CXXFLAGS="$CXXFLAGS -gdwarf-2"
 
 cmake -DCMAKE_INSTALL_PREFIX=%{_prefix} \
-      -DLIB=%{_lib} \
       -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_SKIP_RPATH=1 \
       -DUSE_TRANSLATION_SET=${TRANSLATION_SET:-zypp} \
@@ -128,9 +123,9 @@ mkdir -p $RPM_BUILD_ROOT%{_libdir}/zypp/plugins/commit
 mkdir -p $RPM_BUILD_ROOT%{_libdir}/zypp/plugins/services
 mkdir -p $RPM_BUILD_ROOT%{_libdir}/zypp/plugins/system
 mkdir -p $RPM_BUILD_ROOT%{_libdir}/zypp/plugins/urlresolver
-mkdir -p $RPM_BUILD_ROOT%{_var}/lib/zypp
-mkdir -p $RPM_BUILD_ROOT%{_var}/log/zypp
-mkdir -p $RPM_BUILD_ROOT%{_var}/cache/zypp
+mkdir -p $RPM_BUILD_ROOT%{_sharedstatedir}/zypp
+mkdir -p $RPM_BUILD_ROOT%{_localstatedir}/log/zypp
+mkdir -p $RPM_BUILD_ROOT%{_localstatedir}/cache/zypp
 
 make -C po install DESTDIR=$RPM_BUILD_ROOT
 # Create filelist with translations
@@ -214,9 +209,9 @@ fi
 %config %{_sysconfdir}/zypp/zypp.conf
 %config %{_sysconfdir}/zypp/systemCheck
 %config %{_sysconfdir}/logrotate.d/zypp-history.lr
-%dir               %{_var}/lib/zypp
-%dir               %{_var}/log/zypp
-%dir               %{_var}/cache/zypp
+%dir               %{_sharedstatedir}/zypp
+%dir               %{_localstatedir}/log/zypp
+%dir               %{_localstatedir}/cache/zypp
 %{_libdir}/zypp
 %{_datadir}/zypp
 %{_bindir}/*
