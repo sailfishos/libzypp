@@ -12,6 +12,7 @@ Patch4:         0004-Set-unrestricted-auth-curl-option.patch
 Patch5:         0005-disable-doc.patch
 Patch6:         0006-libzypp-Enable-netrcoptional-on-libcurl-to-allow-for.patch
 Patch7:         0007-Set-GPG-homedir-when-reading-signatures.patch
+Patch8:         0008-MediaCurl-Fix-leaking-fd.patch
 BuildRequires:  cmake
 BuildRequires:  openssl-devel
 # Need boost > 1.53 for string_ref utility
