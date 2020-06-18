@@ -80,9 +80,9 @@ Authors:
 %prep
 %autosetup -p1 -n %{name}-%{version}/upstream
 
-# Use correct library path
-find -type f -exec sed -i -e "s|/usr/lib/zypp|%{_libdir}/zypp|g" {} ';'
-find -type f -exec sed -i -e "s|\${CMAKE_INSTALL_PREFIX}/lib/zypp|\${CMAKE_INSTALL_PREFIX}/%{_lib}/zypp|g" {} ';'
+# Use correct libexecdir
+find -type f -exec sed -i -e "s|/usr/lib/zypp|%{_libexecdir}/zypp|g" {} ';'
+find -type f -exec sed -i -e "s|\${CMAKE_INSTALL_PREFIX}/lib/zypp|\${CMAKE_INSTALL_PREFIX}/libexec/zypp|g" {} ';'
 
 %build
 # Relocate all the dirs in /var/cache/zypp to /home/.zypp-cache
@@ -118,12 +118,13 @@ mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/zypp/services.d
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/zypp/vendors.d
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/zypp/multiversion.d
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/zypp/systemCheck.d
-mkdir -p $RPM_BUILD_ROOT%{_libdir}/zypp
-mkdir -p $RPM_BUILD_ROOT%{_libdir}/zypp/plugins
-mkdir -p $RPM_BUILD_ROOT%{_libdir}/zypp/plugins/commit
-mkdir -p $RPM_BUILD_ROOT%{_libdir}/zypp/plugins/services
-mkdir -p $RPM_BUILD_ROOT%{_libdir}/zypp/plugins/system
-mkdir -p $RPM_BUILD_ROOT%{_libdir}/zypp/plugins/urlresolver
+mkdir -p $RPM_BUILD_ROOT%{_libexecdir}/zypp
+mkdir -p $RPM_BUILD_ROOT%{_libexecdir}/zypp/plugins
+mkdir -p $RPM_BUILD_ROOT%{_libexecdir}/zypp/plugins/appdata
+mkdir -p $RPM_BUILD_ROOT%{_libexecdir}/zypp/plugins/commit
+mkdir -p $RPM_BUILD_ROOT%{_libexecdir}/zypp/plugins/services
+mkdir -p $RPM_BUILD_ROOT%{_libexecdir}/zypp/plugins/system
+mkdir -p $RPM_BUILD_ROOT%{_libexecdir}/zypp/plugins/urlresolver
 mkdir -p $RPM_BUILD_ROOT%{_sharedstatedir}/zypp
 mkdir -p $RPM_BUILD_ROOT%{_localstatedir}/log/zypp
 mkdir -p $RPM_BUILD_ROOT%{_localstatedir}/cache/zypp
@@ -213,7 +214,7 @@ fi
 %dir               %{_sharedstatedir}/zypp
 %dir               %{_localstatedir}/log/zypp
 %dir               %{_localstatedir}/cache/zypp
-%{_libdir}/zypp
+%{_libexecdir}/zypp
 %{_datadir}/zypp
 %{_bindir}/*
 %{_libdir}/libzypp*so.*
