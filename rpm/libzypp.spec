@@ -1,37 +1,40 @@
+%bcond_with mediabackend_tests
+
+
 Name:           libzypp
 License:        GPLv2+
 Summary:        Package, Patch, Pattern, and Product Management
-Version:        17.9.0
+Version:        17.25.2
 Release:        1
 Source:         %{name}-%{version}.tar.bz2
 Source1:        %{name}-rpmlintrc
 Patch1:         0001-Set-downloadusedeltarpmalwaystrue.patch
 Patch2:         0002-Set-rpminstallexcludedocs--yes-Save-space-on.patch
 Patch3:         0003-Ensure-that-the-destination-path-for-applyi.patch
-Patch4:         0004-Set-unrestricted-auth-curl-option.patch
-Patch5:         0005-disable-doc.patch
-Patch6:         0006-libzypp-Enable-netrcoptional-on-libcurl-to-allow-for.patch
-Patch7:         0007-Set-GPG-homedir-when-reading-signatures.patch
-Patch8:         0008-MediaCurl-Fix-leaking-fd.patch
+Patch4:         0004-libzypp-Enable-netrcoptional-on-libcurl-to-allow-for.patch
+Patch5:         0005-Disable-docs-building-with-force.patch
 BuildRequires:  cmake
-BuildRequires:  openssl-devel
+BuildRequires:  pkgconfig(openssl) >= 1.1
 # Need boost > 1.53 for string_ref utility
 BuildRequires:  boost-devel >= 1.53.0
-BuildRequires:  doxygen
 BuildRequires:  gcc-c++ >= 4.6
-BuildRequires:  gettext-devel
-BuildRequires:  libxml2-devel
+BuildRequires:  gettext
+BuildRequires:  pkgconfig(libxml-2.0)
 BuildRequires:  pkgconfig(libproxy-1.0)
-BuildRequires:  libsolv-devel >= 0.6.8
-Requires:       libsolv-tools >= 0.6.8
-Requires:       libsolv0 >= 0.6.8
-Requires:       lsof
+BuildRequires:  pkgconfig(libudev)
+BuildRequires:  pkgconfig(udev)
+BuildRequires:  libsolv-devel >= 0.7.15
+BuildRequires:  libsolv-tools >= 0.7.15
+BuildRequires:  pkgconfig(sigc++-2.0)
 BuildRequires:  glib2-devel
-BuildRequires:  popt-devel
-BuildRequires:  rpm-devel
+BuildRequires:  pkgconfig(popt)
+BuildRequires:  pkgconfig(rpm)
 BuildRequires:  gpgme-devel
-Requires:       gpgme
-BuildRequires:  curl-devel
+BuildRequires:  pkgconfig(libcurl)
+BuildRequires:  yaml-cpp-devel
+Requires:       lsof
+Requires:       libsolv-tools >= 0.7.15
+
 
 %description
 Package, Patch, Pattern, and Product Management
@@ -49,18 +52,8 @@ Authors:
 
 %package devel
 Requires:       libzypp = %{version}
-Requires:       libxml2-devel
-Requires:       openssl-devel
-Requires:       rpm-devel
-Requires:       glibc-devel
-Requires:       zlib-devel
-Requires:       bzip2
-Requires:       popt-devel
 Requires:       boost-devel >= 1.60.0
-Requires:       libstdc++-devel
-Requires:       cmake
-Requires:       curl-devel
-Requires:       libsolv-devel
+Requires:       libsolv-devel >= 0.7.15
 Summary:        Package, Patch, Pattern, and Product Management - developers files
 
 %description -n libzypp-devel
@@ -90,16 +83,21 @@ sed -i -r 's/^#(.*)\/var\/cache\/zypp/\1\/home\/.zypp-cache/g' ./zypp.conf
 mkdir -p build
 cd build
 
-# There is gcc bug that prevents using gdwarf-4 atm.
-export CFLAGS="$CFLAGS -gdwarf-2"
-export CXXFLAGS="$CXXFLAGS -gdwarf-2"
+export CFLAGS="%{optflags}"
+export CXXFLAGS="%{optflags}"
 
-cmake -DCMAKE_INSTALL_PREFIX=%{_prefix} \
+%cmake -DCMAKE_INSTALL_PREFIX=%{_prefix} \
       -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_SKIP_RPATH=1 \
       -DUSE_TRANSLATION_SET=${TRANSLATION_SET:-zypp} \
+      -DDISABLE_LIBPROXY=TRUE \
+      -DENABLE_BUILD_DOCS=FALSE \
+      -DENABLE_BUILD_TRANS=FALSE \
+      -DENABLE_BUILD_TESTS=FALSE \
+      -DDISABLE_AUTODOCS=TRUE \
+      %{!?with_mediabackend_tests:-DDISABLE_MEDIABACKEND_TESTS=1} \
       ..
-make %{?_smp_mflags} VERBOSE=1
+%make_build VERBOSE=1
 make -C po %{?_smp_mflags} translations
 
 %if 0%{?run_testsuite}
