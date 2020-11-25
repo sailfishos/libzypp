@@ -13,6 +13,7 @@ Patch2:         0002-Set-rpminstallexcludedocs--yes-Save-space-on.patch
 Patch3:         0003-Ensure-that-the-destination-path-for-applyi.patch
 Patch4:         0004-libzypp-Enable-netrcoptional-on-libcurl-to-allow-for.patch
 Patch5:         0005-Disable-docs-building-with-force.patch
+Patch6:         0006-Use-rpm-platform-for-architecture-autodetection.patch
 BuildRequires:  cmake
 BuildRequires:  pkgconfig(openssl) >= 1.1
 # Need boost > 1.53 for string_ref utility
