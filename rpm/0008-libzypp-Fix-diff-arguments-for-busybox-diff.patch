@@ -1,0 +1,27 @@
+From 6593ab4bab379b2c0ef9a73f6da937bebf91b642 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Juho=20H=C3=A4m=C3=A4l=C3=A4inen?=
+ <juho.hamalainen@jolla.com>
+Date: Thu, 26 Nov 2020 09:34:44 +0200
+Subject: [PATCH] [libzypp] Fix diff arguments for busybox-diff.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Signed-off-by: Juho Hämäläinen <juho.hamalainen@jolla.com>
+---
+ po/PotfileDiff.sh | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/po/PotfileDiff.sh b/po/PotfileDiff.sh
+index 04a249c04..ee72c5dfc 100755
+--- a/po/PotfileDiff.sh
++++ b/po/PotfileDiff.sh
+@@ -10,4 +10,4 @@ extract "$1" >"$OLDTMP"
+ extract "$2" >"$NEWTMP"
+ 
+ shift 2	# additional args for diff
+-diff -u0 "$@" "$OLDTMP" "$NEWTMP"
++diff -U 0 "$@" "$OLDTMP" "$NEWTMP"
+-- 
+2.25.1
+
