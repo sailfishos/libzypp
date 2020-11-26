@@ -15,6 +15,7 @@ Patch4:         0004-libzypp-Enable-netrcoptional-on-libcurl-to-allow-for.patch
 Patch5:         0005-Disable-docs-building-with-force.patch
 Patch6:         0006-Use-rpm-platform-for-architecture-autodetection.patch
 Patch7:         0007-Revert-Cleanup-remove-unneeded-ifndef-SWIG.patch
+Patch8:         0008-libzypp-Fix-diff-arguments-for-busybox-diff.patch
 BuildRequires:  cmake
 BuildRequires:  pkgconfig(openssl) >= 1.1
 # Need boost > 1.53 for string_ref utility
