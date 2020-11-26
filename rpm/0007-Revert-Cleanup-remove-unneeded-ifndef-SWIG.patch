@@ -1,0 +1,198 @@
+From 10ac3c312112d585b1de2ef7fd12e5d4d730e6ad Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Matti=20Lehtim=C3=A4ki?= <matti.lehtimaki@jolla.com>
+Date: Thu, 26 Nov 2020 00:51:18 +0200
+Subject: [PATCH] Revert "Cleanup: remove unneeded '#ifndef SWIG'"
+
+This reverts commit 850bbd0fde9075786ca65e46fdfeb7ea01102f16.
+---
+ zypp/CheckSum.h           | 5 ++++-
+ zypp/Patch.h              | 8 ++++----
+ zypp/Pathname.h           | 5 ++---
+ zypp/base/Easy.h          | 5 +++++
+ zypp/base/String.h        | 2 ++
+ zypp/repo/RepoVariables.h | 6 ++++--
+ zypp/sat/SolvableType.h   | 2 ++
+ 7 files changed, 23 insertions(+), 10 deletions(-)
+
+diff --git a/zypp/CheckSum.h b/zypp/CheckSum.h
+index f52fdbef2..ffd84b439 100644
+--- a/zypp/CheckSum.h
++++ b/zypp/CheckSum.h
+@@ -54,10 +54,12 @@ namespace zypp
+      */
+     CheckSum( const std::string & type, std::istream & input_r );
+ 
++#ifndef SWIG // Swig treats it as syntax error0
+     /** Ctor from temporary istream */
+     CheckSum( const std::string & type, std::istream && input_r )
+       : CheckSum( type, input_r )
+     {}
++#endif
+ 
+   public:
+     static const std::string & md5Type();
+@@ -88,7 +90,7 @@ namespace zypp
+     static CheckSum sha256( std::istream & input_r )		{ return  CheckSum( sha256Type(), input_r ); }
+     static CheckSum sha384( std::istream & input_r )		{ return  CheckSum( sha384Type(), input_r ); }
+     static CheckSum sha512( std::istream & input_r )		{ return  CheckSum( sha512Type(), input_r ); }
+-
++#ifndef SWIG // Swig treats it as syntax error
+     static CheckSum md5( std::istream && input_r )		{ return  CheckSum( md5Type(), input_r ); }
+     static CheckSum sha( std::istream && input_r )		{ return  CheckSum( sha1Type(), input_r ); }
+     static CheckSum sha1( std::istream && input_r )		{ return  CheckSum( sha1Type(), input_r ); }
+@@ -96,6 +98,7 @@ namespace zypp
+     static CheckSum sha256( std::istream && input_r )		{ return  CheckSum( sha256Type(), input_r ); }
+     static CheckSum sha384( std::istream && input_r )		{ return  CheckSum( sha384Type(), input_r ); }
+     static CheckSum sha512( std::istream && input_r )		{ return  CheckSum( sha512Type(), input_r ); }
++#endif
+     //@}
+ 
+     /** \name Reads the content of \param input_r and computes the checksum. */
+diff --git a/zypp/Patch.h b/zypp/Patch.h
+index 33de43c82..1ba453a8a 100644
+--- a/zypp/Patch.h
++++ b/zypp/Patch.h
+@@ -107,7 +107,7 @@ namespace zypp
+       bool isCategory( const std::string & category_r ) const;
+       /** \overload taking OR'ed \ref Categories */
+       bool isCategory( Categories category_r ) const;
+-
++#ifndef SWIG // Swig treats it as syntax error
+       /** \overload taking container of category strings
+        * 2nd template arg just to prevent instantiation for Category
+        */
+@@ -118,7 +118,7 @@ namespace zypp
+ 	{ if ( isCategory( el ) ) return true; }
+ 	return false;
+       }
+-
++#endif
+       /** Patch category as enum of wellknown categories.
+        * Unknown values are mapped to \ref CAT_OTHER.
+        */
+@@ -143,7 +143,7 @@ namespace zypp
+       bool isSeverity( const std::string & severity_r ) const;
+       /** \overload taking OR'ed \ref SeverityFlags */
+       bool isSeverity( SeverityFlags severity_r ) const;
+-
++#ifndef SWIG // Swig treats it as syntax error
+       /** \overload taking container of severity strings
+        * 2nd template arg just to prevent instantiation for SeverityFlag
+        */
+@@ -154,7 +154,7 @@ namespace zypp
+ 	{ if ( isSeverity( el ) ) return true; }
+ 	return false;
+       }
+-
++#endif
+       /** Severity string mapped to an enum.
+        * Unknown string values are mapped to \ref SEV_OTHER
+        */
+diff --git a/zypp/Pathname.h b/zypp/Pathname.h
+index d38780744..09d37d030 100644
+--- a/zypp/Pathname.h
++++ b/zypp/Pathname.h
+@@ -1,4 +1,3 @@
+-
+ /*---------------------------------------------------------------------\
+ |                          ____ _   __ __ ___                          |
+ |                         |__  / \ / / . \ . \                         |
+@@ -67,12 +66,12 @@ namespace zypp
+ 	using std::swap;
+ 	swap( lhs._name, rhs._name );
+       }
+-
++#ifndef SWIG // Swig treats it as syntax error
+       /** Move Ctor */
+       Pathname( Pathname && tmp )
+       : _name( std::move( tmp._name ) )
+       {}
+-
++#endif
+       /** Assign */
+       Pathname & operator=( Pathname rhs )
+       { swap( *this, rhs ); return *this; }
+diff --git a/zypp/base/Easy.h b/zypp/base/Easy.h
+index 0b1898d48..908890125 100644
+--- a/zypp/base/Easy.h
++++ b/zypp/base/Easy.h
+@@ -65,6 +65,7 @@
+   CLASS( const CLASS & ) = default;		\
+   CLASS & operator=( const CLASS & ) = default
+ 
++#ifndef SWIG // Swig treats it as syntax error
+ /** Delete move ctor and move assign */
+ #define NON_MOVABLE(CLASS)			\
+   CLASS( CLASS && ) = delete;			\
+@@ -74,6 +75,10 @@
+ #define DEFAULT_MOVABLE(CLASS)			\
+   CLASS( CLASS && ) = default;			\
+   CLASS & operator=( CLASS && ) = default
++#else
++#define NON_MOVABLE(CLASS)
++#define DEFAULT_MOVABLE(CLASS)
++#endif
+ 
+ /** Delete copy ctor and copy assign but enable default move */
+ #define NON_COPYABLE_BUT_MOVE( CLASS ) 		\
+diff --git a/zypp/base/String.h b/zypp/base/String.h
+index 00c6fd63e..6c117919e 100644
+--- a/zypp/base/String.h
++++ b/zypp/base/String.h
+@@ -136,8 +136,10 @@ namespace zypp
+     inline const std::string & asString( const std::string & t )
+     { return t; }
+ 
++#ifndef SWIG // Swig treats it as syntax error
+     inline std::string && asString( std::string && t )
+     { return std::move(t); }
++#endif
+ 
+     inline std::string asString( const char * t )
+     { return t == nullptr ? std::string() : t; }
+diff --git a/zypp/repo/RepoVariables.h b/zypp/repo/RepoVariables.h
+index 4ca95dfef..1d29f6283 100644
+--- a/zypp/repo/RepoVariables.h
++++ b/zypp/repo/RepoVariables.h
+@@ -61,9 +61,10 @@ namespace zypp
+ 
+       /** Return a copy of \a value_r with embedded variables expanded. */
+       std::string operator()( const std::string & value_r, VarRetriever varRetriever_r ) const;
+-
++#ifndef SWIG // Swig treats it as syntax error
+       /** \overload moving */
+       std::string operator()( std::string && value_r, VarRetriever varRetriever_r ) const;
++#endif
+     };
+ 
+     /**
+@@ -105,9 +106,10 @@ namespace zypp
+     struct RepoVariablesStringReplacer : public std::unary_function<const std::string &, std::string>
+     {
+       std::string operator()( const std::string & value_r ) const;
+-
++#ifndef SWIG // Swig treats it as syntax error
+       /** \overload moving */
+       std::string operator()( std::string && value_r ) const;
++#endif
+     };
+ 
+     /**
+diff --git a/zypp/sat/SolvableType.h b/zypp/sat/SolvableType.h
+index ac940786a..8564a6123 100644
+--- a/zypp/sat/SolvableType.h
++++ b/zypp/sat/SolvableType.h
+@@ -147,8 +147,10 @@ namespace zypp
+       SolvableType() {}
+       SolvableType( const SolvableType & ) {}
+       void operator=( const SolvableType & ) {}
++#ifndef SWIG
+       SolvableType( SolvableType && ) {}
+       void operator=( SolvableType && ) {}
++#endif
+       ~SolvableType() {}
+     };
+ 
+-- 
+2.25.1
+

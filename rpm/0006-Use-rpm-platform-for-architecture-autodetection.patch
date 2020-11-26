@@ -1,0 +1,65 @@
+From d55afcc05982769183c5d78e158157065a12d7db Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Juho=20H=C3=A4m=C3=A4l=C3=A4inen?=
+ <juho.hamalainen@jolla.com>
+Date: Wed, 25 Nov 2020 14:03:30 +0200
+Subject: [PATCH] Use rpm platform for architecture autodetection.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+If /etc/rpm/platform file exists use the architecture defined. This way
+we get correct behavior with for example aarch64 kernel and armv7hl
+platform.
+
+Signed-off-by: Juho Hämäläinen <juho.hamalainen@jolla.com>
+---
+ zypp/ZConfig.cc | 33 +++++++++++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
+
+diff --git a/zypp/ZConfig.cc b/zypp/ZConfig.cc
+index 3bf1185af..9ebccea51 100644
+--- a/zypp/ZConfig.cc
++++ b/zypp/ZConfig.cc
+@@ -164,6 +164,39 @@ namespace zypp
+ 	  architecture = Arch_ppc64p7;
+       }
+ #endif
++
++      /* JB#51353 - We need to override architecture when we get certain architectures from uname
++       * which don't match platform. For example aarch64 kernel with armv7hl platform.
++       * This detection mimics what is implemented in kickstart file, writing platform architecture
++       * to /etc/rpm/platform - rpm uses this file to get it right and we use it now as well.
++       * */
++      std::ifstream rpm_platform( "/etc/rpm/platform" );
++
++      if ( rpm_platform )
++      {
++        std::string rpmArch;
++
++        for( iostr::EachLine in( rpm_platform ); in; in.next() )
++        {
++          std::string s = *in;
++          size_t pos = s.find ("-");
++
++          if ( pos != std::string::npos )
++          {
++            rpmArch = s.substr (0, pos);
++            break;
++          }
++        }
++
++        if ( !rpmArch.empty() && rpmArch != architecture.asString() )
++        {
++          MIL << "Uname is '" << architecture
++              << "' but /etc/rpm/platform architecture is '" << rpmArch
++              << "' - use what platform says." << endl;
++          architecture = Arch(rpmArch);
++        }
++      }
++
+       return architecture;
+     }
+ 
+-- 
+2.25.1
+
