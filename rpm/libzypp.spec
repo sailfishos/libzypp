@@ -4,7 +4,7 @@
 Name:           libzypp
 License:        GPLv2+
 Summary:        Package, Patch, Pattern, and Product Management
-Version:        17.24.2
+Version:        17.26.0
 Release:        1
 Source:         %{name}-%{version}.tar.bz2
 Source1:        %{name}-rpmlintrc
@@ -16,6 +16,7 @@ Patch5:         0005-Disable-docs-building-with-force.patch
 Patch6:         0006-Use-rpm-platform-for-architecture-autodetection.patch
 Patch7:         0007-Revert-Cleanup-remove-unneeded-ifndef-SWIG.patch
 Patch8:         0008-libzypp-Fix-diff-arguments-for-busybox-diff.patch
+Patch9:         0009-Fix-build-with-old-gpgme.patch
 BuildRequires:  cmake
 BuildRequires:  pkgconfig(openssl) >= 1.1
 # Need boost > 1.53 for string_ref utility
