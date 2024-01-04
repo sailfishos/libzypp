@@ -1,17 +1,19 @@
 %bcond_with mediabackend_tests
+%define keepstatic 1
 
+%define _cmake_shared_libs %{nil}
 
 Name:           libzypp
 License:        GPLv2+
 Summary:        Package, Patch, Pattern, and Product Management
-Version:        17.26.0
+Version:        17.31.28
 Release:        1
 Source:         %{name}-%{version}.tar.bz2
 Source1:        %{name}-rpmlintrc
-Patch1:         0001-Set-downloadusedeltarpmalwaystrue.patch
-Patch2:         0002-Set-rpminstallexcludedocs--yes-Save-space-on.patch
-Patch3:         0003-Ensure-that-the-destination-path-for-applyi.patch
-Patch4:         0004-libzypp-Enable-netrcoptional-on-libcurl-to-allow-for.patch
+Patch1:         0001-libzypp-Set-download.use_deltarpm.always-true-.-Fixe.patch
+Patch2:         0002-libzypp-Set-rpm.install.excludedocs-yes.-Save-space-.patch
+Patch3:         0003-deltarpm-Ensure-that-the-destination-path-for-applyi.patch
+Patch4:         0004-Enable-netrc-optional-on-libcurl-to-allow-for-easier.patch
 Patch5:         0005-Disable-docs-building-with-force.patch
 Patch6:         0006-Use-rpm-platform-for-architecture-autodetection.patch
 Patch7:         0007-Revert-Cleanup-remove-unneeded-ifndef-SWIG.patch
@@ -32,6 +34,9 @@ BuildRequires:  libsolv-tools >= 0.7.15
 BuildRequires:  pkgconfig(sigc++-2.0)
 BuildRequires:  glib2-devel
 BuildRequires:  pkgconfig(popt)
+BuildRequires:  pkgconfig(protobuf)
+BuildRequires:  pkgconfig(protobuf-lite)
+BuildRequires:  pkgconfig(readline)
 BuildRequires:  pkgconfig(rpm)
 BuildRequires:  gpgme-devel
 BuildRequires:  pkgconfig(libcurl)
@@ -58,6 +63,7 @@ Authors:
 Requires:       libzypp = %{version}
 Requires:       boost-devel >= 1.60.0
 Requires:       libsolv-devel >= 0.7.15
+Provides:       libzypp-tui-devel = 1
 Summary:        Package, Patch, Pattern, and Product Management - developers files
 
 %description -n libzypp-devel
@@ -223,7 +229,12 @@ fi
 
 %files devel
 %defattr(-,root,root,-)
-%{_libdir}/libzypp.so
+%{_libdir}/libzypp*.so
+%{_libdir}/libzypp-tui.a
 %{_includedir}/zypp
+%{_includedir}/zypp-core
+%{_includedir}/zypp-media
+%{_includedir}/zypp-curl
+%{_includedir}/zypp-tui
 %{_datadir}/cmake/Modules/*
 %{_libdir}/pkgconfig/libzypp.pc

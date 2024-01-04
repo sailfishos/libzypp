@@ -1,8 +1,17 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Matti=20Lehtim=C3=A4ki?= <matti.lehtimaki@jolla.com>
+Date: Thu, 4 Jan 2024 22:00:22 +0200
+Subject: [PATCH] Fix build with old gpgme
+
+---
+ zypp/KeyManager.cc | 6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
+
 diff --git a/zypp/KeyManager.cc b/zypp/KeyManager.cc
-index b53b03c9a..46242f894 100644
+index 6eaad917f874ac903a5bbdc1d89069dd320e34f2..94c3dba268fa0236a7121d17d7ddf1b8feac290b 100644
 --- a/zypp/KeyManager.cc
 +++ b/zypp/KeyManager.cc
-@@ -417,11 +417,7 @@ bool KeyManagerCtx::exportKey(const std::string &id, std::ostream &stream)
+@@ -411,11 +411,7 @@ bool KeyManagerCtx::exportKey(const std::string &id, std::ostream &stream)
  
    //format as ascii armored
    gpgme_set_armor (_pimpl->_ctx, 1);

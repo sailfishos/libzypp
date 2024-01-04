@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Niels Breet <niels.breet@jolla.com>
+Date: Wed, 2 Sep 2015 18:51:53 +0300
+Subject: [PATCH] [libzypp] Set rpm.install.excludedocs = yes. Save space on
+ mobile devices. Fixes JB#31669
+
+---
+ zypp.conf | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/zypp.conf b/zypp.conf
+index 91c0588c82411de81321fa459349ac184852b915..dff5eeeea5456fbbe4581327debb7c74c8d8b700 100644
+--- a/zypp.conf
++++ b/zypp.conf
+@@ -666,7 +666,7 @@ multiversion.kernels = latest,latest-1,running
+ ## Valid values:  boolean
+ ## Default value: no
+ ##
+-# rpm.install.excludedocs = no
++rpm.install.excludedocs = yes
+ 
+ ##
+ ## Location of history log file.

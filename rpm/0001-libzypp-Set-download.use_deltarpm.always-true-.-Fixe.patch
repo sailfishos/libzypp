@@ -1,14 +1,18 @@
-From 4f7310065d16cf6e777b8e25c5fba4673d00169b Wed, 27 Jun 2018 18:17:24 +0200
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Niels Breet <niels.breet@jolla.com>
 Date: Wed, 2 Sep 2015 18:51:28 +0300
-Subject: [PATCH] [libzypp] Set download.use_deltarpm.always=true . Fixes JB#31671
+Subject: [PATCH] [libzypp] Set download.use_deltarpm.always=true . Fixes
+ JB#31671
 
+---
+ zypp.conf | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/zypp.conf b/zypp.conf
-index 4abb5f2..93cfa03 100644
+index 69b45f22db8264e8691094e24d788a0ff8101564..91c0588c82411de81321fa459349ac184852b915 100644
 --- a/zypp.conf
 +++ b/zypp.conf
-@@ -215,7 +215,7 @@
+@@ -226,7 +226,7 @@
  ##
  ## This option has no effect unless download.use_deltarpm is set true.
  ##
