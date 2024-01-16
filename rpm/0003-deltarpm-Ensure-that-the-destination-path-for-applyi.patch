@@ -1,11 +1,15 @@
-From bd03b2e565ec0196cb9ad437f4220a8e12e352b5 Wed, 27 Jun 2018 18:16:17 +0200
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Martin Grimme <martin.grimme@gmail.com>
 Date: Wed, 21 Oct 2015 13:01:32 +0200
-Subject: [PATCH] [deltarpm] Ensure that the destination path for applying the delta rpm exists. Fixes JB#31668
+Subject: [PATCH] [deltarpm] Ensure that the destination path for applying the
+ delta rpm exists. Fixes JB#31668
 
+---
+ zypp/repo/PackageProvider.cc | 2 ++
+ 1 file changed, 2 insertions(+)
 
 diff --git a/zypp/repo/PackageProvider.cc b/zypp/repo/PackageProvider.cc
-index 0557284..251160b 100644
+index df39162326aa278f94e791a5928440f8ae740616..3ee274f0ac97085cb0401057b2d30f8cbc2ae7c9 100644
 --- a/zypp/repo/PackageProvider.cc
 +++ b/zypp/repo/PackageProvider.cc
 @@ -613,6 +613,8 @@ namespace zypp
@@ -14,6 +18,6 @@ index 0557284..251160b 100644
        Pathname builddest( cachedest.extend( ".drpm" ) );
 +      // ensure that the destination directory exists
 +      filesystem::assert_dir( builddest.dirname() );
-
+ 
        if ( ! applydeltarpm::provide( delta, builddest,
                                       bind( &RpmPackageProvider::progressDeltaApply, this, _1 ) ) )

@@ -1,23 +1,23 @@
-From 10ac3c312112d585b1de2ef7fd12e5d4d730e6ad Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Matti=20Lehtim=C3=A4ki?= <matti.lehtimaki@jolla.com>
 Date: Thu, 26 Nov 2020 00:51:18 +0200
 Subject: [PATCH] Revert "Cleanup: remove unneeded '#ifndef SWIG'"
 
 This reverts commit 850bbd0fde9075786ca65e46fdfeb7ea01102f16.
 ---
- zypp/CheckSum.h           | 5 ++++-
+ zypp-core/CheckSum.h      | 5 ++++-
+ zypp-core/Pathname.h      | 5 ++---
+ zypp-core/base/Easy.h     | 5 +++++
+ zypp-core/base/String.h   | 2 ++
  zypp/Patch.h              | 8 ++++----
- zypp/Pathname.h           | 5 ++---
- zypp/base/Easy.h          | 5 +++++
- zypp/base/String.h        | 2 ++
  zypp/repo/RepoVariables.h | 6 ++++--
  zypp/sat/SolvableType.h   | 2 ++
  7 files changed, 23 insertions(+), 10 deletions(-)
 
-diff --git a/zypp/CheckSum.h b/zypp/CheckSum.h
-index f52fdbef2..ffd84b439 100644
---- a/zypp/CheckSum.h
-+++ b/zypp/CheckSum.h
+diff --git a/zypp-core/CheckSum.h b/zypp-core/CheckSum.h
+index 41e6b62aa9a1a2df88185c3989c65dee819508f8..f4a63c651d83bf28db6223b1228ea6cd058e3b34 100644
+--- a/zypp-core/CheckSum.h
++++ b/zypp-core/CheckSum.h
 @@ -54,10 +54,12 @@ namespace zypp
       */
      CheckSum( const std::string & type, std::istream & input_r );
@@ -48,58 +48,18 @@ index f52fdbef2..ffd84b439 100644
      //@}
  
      /** \name Reads the content of \param input_r and computes the checksum. */
-diff --git a/zypp/Patch.h b/zypp/Patch.h
-index 33de43c82..1ba453a8a 100644
---- a/zypp/Patch.h
-+++ b/zypp/Patch.h
-@@ -107,7 +107,7 @@ namespace zypp
-       bool isCategory( const std::string & category_r ) const;
-       /** \overload taking OR'ed \ref Categories */
-       bool isCategory( Categories category_r ) const;
--
-+#ifndef SWIG // Swig treats it as syntax error
-       /** \overload taking container of category strings
-        * 2nd template arg just to prevent instantiation for Category
-        */
-@@ -118,7 +118,7 @@ namespace zypp
- 	{ if ( isCategory( el ) ) return true; }
- 	return false;
-       }
--
-+#endif
-       /** Patch category as enum of wellknown categories.
-        * Unknown values are mapped to \ref CAT_OTHER.
-        */
-@@ -143,7 +143,7 @@ namespace zypp
-       bool isSeverity( const std::string & severity_r ) const;
-       /** \overload taking OR'ed \ref SeverityFlags */
-       bool isSeverity( SeverityFlags severity_r ) const;
--
-+#ifndef SWIG // Swig treats it as syntax error
-       /** \overload taking container of severity strings
-        * 2nd template arg just to prevent instantiation for SeverityFlag
-        */
-@@ -154,7 +154,7 @@ namespace zypp
- 	{ if ( isSeverity( el ) ) return true; }
- 	return false;
-       }
--
-+#endif
-       /** Severity string mapped to an enum.
-        * Unknown string values are mapped to \ref SEV_OTHER
-        */
-diff --git a/zypp/Pathname.h b/zypp/Pathname.h
-index d38780744..09d37d030 100644
---- a/zypp/Pathname.h
-+++ b/zypp/Pathname.h
+diff --git a/zypp-core/Pathname.h b/zypp-core/Pathname.h
+index ad3f51fb3fe43a5d8cac361456bad0614b524962..cf2886306e7693c4839a378babe921a2c011189a 100644
+--- a/zypp-core/Pathname.h
++++ b/zypp-core/Pathname.h
 @@ -1,4 +1,3 @@
 -
  /*---------------------------------------------------------------------\
  |                          ____ _   __ __ ___                          |
  |                         |__  / \ / / . \ . \                         |
 @@ -67,12 +66,12 @@ namespace zypp
- 	using std::swap;
- 	swap( lhs._name, rhs._name );
+         using std::swap;
+         swap( lhs._name, rhs._name );
        }
 -
 +#ifndef SWIG // Swig treats it as syntax error
@@ -112,10 +72,10 @@ index d38780744..09d37d030 100644
        /** Assign */
        Pathname & operator=( Pathname rhs )
        { swap( *this, rhs ); return *this; }
-diff --git a/zypp/base/Easy.h b/zypp/base/Easy.h
-index 0b1898d48..908890125 100644
---- a/zypp/base/Easy.h
-+++ b/zypp/base/Easy.h
+diff --git a/zypp-core/base/Easy.h b/zypp-core/base/Easy.h
+index 0b1898d48afef683a7c5787064c465a41170b865..90889012570cc384d7ef766802b11791b46ff12e 100644
+--- a/zypp-core/base/Easy.h
++++ b/zypp-core/base/Easy.h
 @@ -65,6 +65,7 @@
    CLASS( const CLASS & ) = default;		\
    CLASS & operator=( const CLASS & ) = default
@@ -135,11 +95,11 @@ index 0b1898d48..908890125 100644
  
  /** Delete copy ctor and copy assign but enable default move */
  #define NON_COPYABLE_BUT_MOVE( CLASS ) 		\
-diff --git a/zypp/base/String.h b/zypp/base/String.h
-index 00c6fd63e..6c117919e 100644
---- a/zypp/base/String.h
-+++ b/zypp/base/String.h
-@@ -136,8 +136,10 @@ namespace zypp
+diff --git a/zypp-core/base/String.h b/zypp-core/base/String.h
+index 72e47285750f66679a15af48464681a85dd466d0..186ccf7f7513730a02f13604808730ff2969cf25 100644
+--- a/zypp-core/base/String.h
++++ b/zypp-core/base/String.h
+@@ -139,8 +139,10 @@ namespace zypp
      inline const std::string & asString( const std::string & t )
      { return t; }
  
@@ -150,8 +110,48 @@ index 00c6fd63e..6c117919e 100644
  
      inline std::string asString( const char * t )
      { return t == nullptr ? std::string() : t; }
+diff --git a/zypp/Patch.h b/zypp/Patch.h
+index 9247c7313a0b9d9c32b919483c0fabcd5f108ebe..a858dd222fcbec72d6a43a8e416f5c1f454690e4 100644
+--- a/zypp/Patch.h
++++ b/zypp/Patch.h
+@@ -107,7 +107,7 @@ namespace zypp
+       bool isCategory( const std::string & category_r ) const;
+       /** \overload taking OR'ed \ref Categories */
+       bool isCategory( Categories category_r ) const;
+-
++#ifndef SWIG // Swig treats it as syntax error
+       /** \overload taking container of category strings
+        * 2nd template arg just to prevent instantiation for Category
+        */
+@@ -118,7 +118,7 @@ namespace zypp
+         { if ( isCategory( el ) ) return true; }
+         return false;
+       }
+-
++#endif
+       /** Patch category as enum of wellknown categories.
+        * Unknown values are mapped to \ref CAT_OTHER.
+        */
+@@ -143,7 +143,7 @@ namespace zypp
+       bool isSeverity( const std::string & severity_r ) const;
+       /** \overload taking OR'ed \ref SeverityFlags */
+       bool isSeverity( SeverityFlags severity_r ) const;
+-
++#ifndef SWIG // Swig treats it as syntax error
+       /** \overload taking container of severity strings
+        * 2nd template arg just to prevent instantiation for SeverityFlag
+        */
+@@ -154,7 +154,7 @@ namespace zypp
+         { if ( isSeverity( el ) ) return true; }
+         return false;
+       }
+-
++#endif
+       /** Severity string mapped to an enum.
+        * Unknown string values are mapped to \ref SEV_OTHER
+        */
 diff --git a/zypp/repo/RepoVariables.h b/zypp/repo/RepoVariables.h
-index 4ca95dfef..1d29f6283 100644
+index 12994714428bd4b0e27840c0d23a6106f55338b0..670b2701afe67784380f21419fca01878d2a4ff4 100644
 --- a/zypp/repo/RepoVariables.h
 +++ b/zypp/repo/RepoVariables.h
 @@ -61,9 +61,10 @@ namespace zypp
@@ -167,7 +167,7 @@ index 4ca95dfef..1d29f6283 100644
  
      /**
 @@ -105,9 +106,10 @@ namespace zypp
-     struct RepoVariablesStringReplacer : public std::unary_function<const std::string &, std::string>
+     struct RepoVariablesStringReplacer
      {
        std::string operator()( const std::string & value_r ) const;
 -
@@ -179,10 +179,10 @@ index 4ca95dfef..1d29f6283 100644
  
      /**
 diff --git a/zypp/sat/SolvableType.h b/zypp/sat/SolvableType.h
-index ac940786a..8564a6123 100644
+index 7b2b4a24d3b471076a61b53b7007a3d8cb6d9d9b..a778ef9d549656793ee6c053316000d872c38ee8 100644
 --- a/zypp/sat/SolvableType.h
 +++ b/zypp/sat/SolvableType.h
-@@ -147,8 +147,10 @@ namespace zypp
+@@ -151,8 +151,10 @@ namespace zypp
        SolvableType() {}
        SolvableType( const SolvableType & ) {}
        void operator=( const SolvableType & ) {}
@@ -193,6 +193,3 @@ index ac940786a..8564a6123 100644
        ~SolvableType() {}
      };
  
--- 
-2.25.1
-

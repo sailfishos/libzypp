@@ -1,4 +1,4 @@
-From 86e1f702c8348db64c84e6515004729e110e5e31 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Niels Breet <niels.breet@jolla.com>
 Date: Tue, 27 Oct 2020 17:01:42 +0200
 Subject: [PATCH] Disable docs building with force
@@ -8,18 +8,15 @@ Subject: [PATCH] Disable docs building with force
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index d3945f8..c548b77 100644
+index b0d19a2eef60cb3f15fa30265433dd247bbb2e7f..c143d06a2d8d4f9dd6c784413f518f305ba30c13 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -319,7 +319,7 @@ ADD_SUBDIRECTORY( zypp )
- # do not build devel by default
- ADD_SUBDIRECTORY( devel EXCLUDE_FROM_ALL )
+@@ -393,7 +393,7 @@ ADD_SUBDIRECTORY( zypp-curl )
+ ADD_SUBDIRECTORY( zypp-tui )
+ ADD_SUBDIRECTORY( zypp )
  ADD_SUBDIRECTORY( tools )
 -ADD_SUBDIRECTORY( doc )
 +# ADD_SUBDIRECTORY( doc )
  
  IF ( ENABLE_BUILD_TRANS )
    ADD_SUBDIRECTORY( po )
--- 
-1.9.1
-

@@ -1,4 +1,4 @@
-From ad25aa65aedb488b349218019fd478291af3a7ab Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Juha Kallioinen <juha.kallioinen@jolla.com>
 Date: Wed, 6 Nov 2013 14:05:27 +0000
 Subject: [PATCH] Enable netrc-optional on libcurl to allow for easier image
@@ -8,35 +8,36 @@ Original patch from: Islam Amer <islam.amer@jollamobile.com>
 
 Signed-off-by: Juha Kallioinen <juha.kallioinen@jolla.com>
 ---
- zypp/media/MediaCurl.cc | 59 ++++++++++++++++++++++++++++++++++++++-----------
+ zypp/media/MediaCurl.cc | 58 ++++++++++++++++++++++++++++++++---------
  zypp/media/MediaCurl.h  |  2 +-
- 2 files changed, 47 insertions(+), 14 deletions(-)
+ 2 files changed, 47 insertions(+), 13 deletions(-)
 
 diff --git a/zypp/media/MediaCurl.cc b/zypp/media/MediaCurl.cc
-index 2947c31..a647977 100644
+index 3f310688c9da252d7b1a32f2c1459805d3db135f..921b9f09275e0e29620d1b266d00e23bc0358792 100644
 --- a/zypp/media/MediaCurl.cc
 +++ b/zypp/media/MediaCurl.cc
-@@ -616,8 +616,8 @@ void MediaCurl::getFileCopy( const Pathname & filename , const Pathname & target
- 
+@@ -749,9 +749,10 @@ void MediaCurl::getFileCopy( const OnMediaLocation & srcFile , const Pathname &
    Url fileurl(getFileUrl(filename));
  
--  bool retry = false;
--
-+  bool retry = false, netrc = false;
+   bool firstAuth = true;  // bsc#1210870: authenticate must not return stored credentials more than once.
++  bool netrc = false;
 +  int numTry = 0;
+   unsigned internalTry = 0;
+   static constexpr unsigned maxInternalTry = 3;
+-
    do
    {
      try
-@@ -628,7 +628,7 @@ void MediaCurl::getFileCopy( const Pathname & filename , const Pathname & target
+@@ -762,7 +763,7 @@ void MediaCurl::getFileCopy( const OnMediaLocation & srcFile , const Pathname &
      // retry with proper authentication data
      catch (MediaUnauthorizedException & ex_r)
      {
--      if(authenticate(ex_r.hint(), !retry))
-+      if (authenticate(ex_r.hint(), numTry++, netrc))
-         retry = true;
-       else
-       {
-@@ -658,8 +658,8 @@ void MediaCurl::getFileCopy( const Pathname & filename , const Pathname & target
+-      if ( authenticate(ex_r.hint(), firstAuth) ) {
++      if ( authenticate(ex_r.hint(), numTry++, netrc) ) {
+         firstAuth = false;  // must not return stored credentials again
+         continue; // retry
+       }
+@@ -801,8 +802,8 @@ void MediaCurl::getFileCopy( const OnMediaLocation & srcFile , const Pathname &
  
  bool MediaCurl::getDoesFileExist( const Pathname & filename ) const
  {
@@ -47,7 +48,7 @@ index 2947c31..a647977 100644
    do
    {
      try
-@@ -669,7 +669,7 @@ bool MediaCurl::getDoesFileExist( const Pathname & filename ) const
+@@ -812,7 +813,7 @@ bool MediaCurl::getDoesFileExist( const Pathname & filename ) const
      // authentication problem, retry with proper authentication data
      catch (MediaUnauthorizedException & ex_r)
      {
@@ -56,7 +57,7 @@ index 2947c31..a647977 100644
          retry = true;
        else
          ZYPP_RETHROW(ex_r);
-@@ -1346,9 +1346,32 @@ void MediaCurl::resetExpectedFileSize(void *clientp, const ByteCount &expectedFi
+@@ -1410,9 +1411,32 @@ void MediaCurl::resetExpectedFileSize(void *clientp, const ByteCount &expectedFi
  }
  
  ///////////////////////////////////////////////////////////////////
@@ -91,7 +92,7 @@ index 2947c31..a647977 100644
    //! \todo need a way to pass different CredManagerOptions here
    CredentialManager cm(CredManagerOptions(ZConfig::instance().repoManagerRoot()));
    CurlAuthData_Ptr credentials;
-@@ -1356,21 +1379,29 @@ bool MediaCurl::authenticate(const std::string & availAuthTypes, bool firstTry)
+@@ -1420,21 +1444,29 @@ bool MediaCurl::authenticate(const std::string & availAuthTypes, bool firstTry)
    // get stored credentials
    AuthData_Ptr cmcred = cm.getCred(_url);
  
@@ -126,7 +127,7 @@ index 2947c31..a647977 100644
        curlcred->setUsername(_url.getUsername());
      // if CM has found some credentials, preset the username from there
      else if (cmcred)
-@@ -1407,6 +1438,7 @@ bool MediaCurl::authenticate(const std::string & availAuthTypes, bool firstTry)
+@@ -1471,6 +1503,7 @@ bool MediaCurl::authenticate(const std::string & availAuthTypes, bool firstTry)
      }
      else
      {
@@ -134,7 +135,7 @@ index 2947c31..a647977 100644
        DBG << "callback answer: cancel" << endl;
      }
    }
-@@ -1445,6 +1477,7 @@ bool MediaCurl::authenticate(const std::string & availAuthTypes, bool firstTry)
+@@ -1509,6 +1542,7 @@ bool MediaCurl::authenticate(const std::string & availAuthTypes, bool firstTry)
      return true;
    }
  
@@ -143,10 +144,10 @@ index 2947c31..a647977 100644
  }
  
 diff --git a/zypp/media/MediaCurl.h b/zypp/media/MediaCurl.h
-index de3ab5c..44b9add 100644
+index 14b56f605bbbf384c1208c2322e88bfeb4eaa870..cb399f5ece0687d4e7ea2b32c77496c29e7bae5e 100644
 --- a/zypp/media/MediaCurl.h
 +++ b/zypp/media/MediaCurl.h
-@@ -160,7 +160,7 @@ class MediaCurl : public MediaHandler
+@@ -152,7 +152,7 @@ class MediaCurl : public MediaNetworkCommonHandler
       */
      std::string getAuthHint() const;
  
@@ -155,6 +156,3 @@ index de3ab5c..44b9add 100644
  
      bool detectDirIndex() const;
  
--- 
-1.9.1
-

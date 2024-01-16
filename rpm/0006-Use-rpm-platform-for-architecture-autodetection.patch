@@ -1,4 +1,4 @@
-From d55afcc05982769183c5d78e158157065a12d7db Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Juho=20H=C3=A4m=C3=A4l=C3=A4inen?=
  <juho.hamalainen@jolla.com>
 Date: Wed, 25 Nov 2020 14:03:30 +0200
@@ -17,11 +17,11 @@ Signed-off-by: Juho Hämäläinen <juho.hamalainen@jolla.com>
  1 file changed, 33 insertions(+)
 
 diff --git a/zypp/ZConfig.cc b/zypp/ZConfig.cc
-index 3bf1185af..9ebccea51 100644
+index f1d330a21236036d8b69acebbc79505b958243fb..a002737c7e2537295e01c825d62b7d989202ff40 100644
 --- a/zypp/ZConfig.cc
 +++ b/zypp/ZConfig.cc
-@@ -164,6 +164,39 @@ namespace zypp
- 	  architecture = Arch_ppc64p7;
+@@ -263,6 +263,39 @@ namespace zypp
+           architecture = Arch_ppc64p7;
        }
  #endif
 +
@@ -60,6 +60,3 @@ index 3bf1185af..9ebccea51 100644
        return architecture;
      }
  
--- 
-2.25.1
-

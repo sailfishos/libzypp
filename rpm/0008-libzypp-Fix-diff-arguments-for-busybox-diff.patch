@@ -1,4 +1,4 @@
-From 6593ab4bab379b2c0ef9a73f6da937bebf91b642 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Juho=20H=C3=A4m=C3=A4l=C3=A4inen?=
  <juho.hamalainen@jolla.com>
 Date: Thu, 26 Nov 2020 09:34:44 +0200
@@ -13,7 +13,7 @@ Signed-off-by: Juho Hämäläinen <juho.hamalainen@jolla.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/po/PotfileDiff.sh b/po/PotfileDiff.sh
-index 04a249c04..ee72c5dfc 100755
+index 04a249c0498180674dc81d686b1b5b3f0677dbb7..ee72c5dfc70ed477f5f62736fb386fd8cf9bab89 100755
 --- a/po/PotfileDiff.sh
 +++ b/po/PotfileDiff.sh
 @@ -10,4 +10,4 @@ extract "$1" >"$OLDTMP"
@@ -22,6 +22,3 @@ index 04a249c04..ee72c5dfc 100755
  shift 2	# additional args for diff
 -diff -u0 "$@" "$OLDTMP" "$NEWTMP"
 +diff -U 0 "$@" "$OLDTMP" "$NEWTMP"
--- 
-2.25.1
-
