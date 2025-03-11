@@ -1,0 +1,53 @@
+From 88128ba6d7c291a26b51f6889231cdd5b0c11fbb Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Matti=20Lehtim=C3=A4ki?= <matti.lehtimaki@jolla.com>
+Date: Tue, 11 Mar 2025 22:33:42 +0200
+Subject: [PATCH] test
+
+---
+ zypp-core/fs/PathInfo.cc | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/zypp-core/fs/PathInfo.cc b/zypp-core/fs/PathInfo.cc
+index fa7416552..641622411 100644
+--- a/zypp-core/fs/PathInfo.cc
++++ b/zypp-core/fs/PathInfo.cc
+@@ -189,13 +189,16 @@ namespace zypp
+     {
+       if ( path_t.empty() ) {
+         error_i = -1;
++          std::cerr << "empty path "  << error_i << endl;
+       } else {
+         switch ( mode_e ) {
+         case STAT:
+           error_i = ::stat( path_t.asString().c_str(), &statbuf_C );
++          std::cerr << "stat mode " << statbuf_C.st_mode << " uid " << statbuf_C.st_uid << " gid " << statbuf_C.st_gid << " error_i "  << error_i << endl;
+           break;
+         case LSTAT:
+           error_i = ::lstat( path_t.asString().c_str(), &statbuf_C );
++          std::cerr << "lstat mode " << statbuf_C.st_mode << " uid " << statbuf_C.st_uid << " gid " << statbuf_C.st_gid << " error_i "  << error_i << endl;
+           break;
+         }
+         if ( error_i == -1 )
+@@ -223,13 +226,19 @@ namespace zypp
+     //
+     mode_t PathInfo::userMay() const
+     {
++      std::cerr << " userMay isExist(): " << isExist() << endl;
+       if ( !isExist() )
+         return 0;
++      std::cerr << " userMay owner: " << owner() << " geteuid " << geteuid() << endl;
++      std::cerr << " userMay group: " << group() << " getegid " << getegid() << endl;
+       if ( owner() == geteuid() ) {
++        std::cerr << " userMay owner() == geteuid()" << endl;
+         return( uperm()/0100 );
+       } else if ( group() == getegid() ) {
++        std::cerr << " userMay group() == getegid()" << endl;
+         return( gperm()/010 );
+       }
++      std::cerr << " userMay operm" << endl;
+       return operm();
+     }
+ 
+-- 
+2.34.1
+
