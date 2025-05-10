@@ -19,6 +19,7 @@ Patch6:         0006-Use-rpm-platform-for-architecture-autodetection.patch
 Patch7:         0007-Revert-Cleanup-remove-unneeded-ifndef-SWIG.patch
 Patch8:         0008-libzypp-Fix-diff-arguments-for-busybox-diff.patch
 Patch9:         0009-Fix-build-with-old-gpgme.patch
+Patch10:        0010-Require-CMake-3.5.patch
 BuildRequires:  cmake
 BuildRequires:  pkgconfig(openssl) >= 1.1
 # Need boost > 1.53 for string_ref utility
@@ -208,7 +209,6 @@ fi
 %postun -p /sbin/ldconfig
 
 %files -f zypp.lang
-%defattr(-,root,root)
 %dir               %{_sysconfdir}/zypp
 %dir               %{_sysconfdir}/zypp/repos.d
 %dir               %{_sysconfdir}/zypp/services.d
@@ -228,7 +228,6 @@ fi
 %exclude %{_sysconfdir}/zypp/needreboot
 
 %files devel
-%defattr(-,root,root,-)
 %{_libdir}/libzypp*.so
 %{_libdir}/libzypp-tui.a
 %{_includedir}/zypp

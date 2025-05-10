@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Christoph=20Gr=C3=BCninger?= <foss@grueninger.de>
+Date: Thu, 12 Sep 2024 08:43:37 +0200
+Subject: [PATCH] Require CMake 3.5
+
+Newer versions of CMake warn that support for CMake < 3.5
+is deprecated.
+---
+ CMakeLists.txt     | 3 ++-
+ libzypp.spec.cmake | 2 +-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index c143d06a2d8d4f9dd6c784413f518f305ba30c13..6dd3b9767462d9ae6701833ab36ea637cdc4320f 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,4 +1,5 @@
+-cmake_minimum_required(VERSION 3.1)
++cmake_minimum_required(VERSION 3.5)
++
+ PROJECT(LIBZYPP)
+ SET( PACKAGE "libzypp" )
+ # where to look first for cmake modules, before ${CMAKE_ROOT}/Modules/ is checked
+diff --git a/libzypp.spec.cmake b/libzypp.spec.cmake
+index de2f7e3d9f2dcf51056114e1e641fc39961a77d2..5aa5307bf69befbeba6d22a51a7ab8a8d4535f4f 100644
+--- a/libzypp.spec.cmake
++++ b/libzypp.spec.cmake
+@@ -69,7 +69,7 @@ Recommends:     logrotate
+ # lsof is used for 'zypper ps':
+ Recommends:     lsof
+ %endif
+-BuildRequires:  cmake >= 3.1
++BuildRequires:  cmake >= 3.5
+ BuildRequires:  pkgconfig(openssl)
+ BuildRequires:  pkgconfig(libudev)
+ %if 0%{?suse_version} >= 1330
