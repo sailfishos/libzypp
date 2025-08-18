@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Matti Viljanen <matti.viljanen@jolla.com>
+Date: Sun, 17 Aug 2025 22:59:13 +0300
+Subject: [PATCH] Skip build cache write permission check in SB2
+
+Updating aarch64 targets in Scratchbox fails, because the binary calls
+fstatat64(/home/.zypp-cache/solv/oss/solv) underneath. This maps the
+path to /srv/mer/targets/xxx-aarch64/var/cache/zypp/solv/oss/solv
+which is owned by the host user and not root. Since Scratchbox doesn't
+properly map users and groups, the writable check fails: user doesn't
+match, group doesn't match, and other has no write permissions.
+---
+ zypp/RepoManager.cc | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/zypp/RepoManager.cc b/zypp/RepoManager.cc
+index 89a3f4920..47d35e508 100644
+--- a/zypp/RepoManager.cc
++++ b/zypp/RepoManager.cc
+@@ -10,6 +10,7 @@
+  *
+ */
+ 
++#include <cstddef>
+ #include <cstdlib>
+ #include <iostream>
+ #include <fstream>
+@@ -1382,7 +1383,7 @@ namespace zypp
+       ZYPP_THROW(ex);
+     }
+ 
+-    if( ! PathInfo(base).userMayW() )
++    if( ! PathInfo(base).userMayW() && getenv("SBOX_SESSION_DIR") == NULL )
+     {
+       Exception ex(str::form( _("Can't create cache at %s - no writing permissions."), base.c_str()) );
+       ZYPP_THROW(ex);
