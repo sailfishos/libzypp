@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Arvin Schnell <aschnell@suse.de>
+Date: Wed, 30 Apr 2025 09:50:37 +0200
+Subject: [PATCH] fixed build with boost 1.88
+
+---
+ zypp/sat/detail/PoolImpl.cc | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/zypp/sat/detail/PoolImpl.cc b/zypp/sat/detail/PoolImpl.cc
+index 0bd1bcb91b97a224e60ceb39bb03b4ff381dd2dc..b8ca5dd11c1d6914bbe4d953dafb161e9a8e5cbe 100644
+--- a/zypp/sat/detail/PoolImpl.cc
++++ b/zypp/sat/detail/PoolImpl.cc
+@@ -12,6 +12,7 @@
+ #include <iostream>
+ #include <fstream>
+ #include <boost/mpl/int.hpp>
++#include <boost/mpl/assert.hpp>
+ 
+ #include <zypp/base/Easy.h>
+ #include <zypp/base/LogTools.h>
